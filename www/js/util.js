@@ -361,7 +361,7 @@ Util.showAPPInfo = function(){
           Text += '<div class="popup-Message-container popup-lg" style="font-size: 20px; text-align: center; line-height: 32px;">'
           Text += '<h4 class="popup-subhead">About</h4>'
           Text += '<p>Version 1.2.0</p>'
-          Text += '<p>IPTV Smarters Pro - The Best IPTV Player</p>'
+          Text += '<p>VLC IPTV - Your Streaming Player</p>'
           Text += '<p>Developed by <a href="javascript:" onclick="Util.websiteLink();"><u> Smarters</u></a></p>'
           Text += '<p><a href="javascript:" onclick="Util.brandedVersionLink();"><u>Click here</u></a> for Customised / Branded Version</p>'
           Text +=   '<div class="col-md-12 col-lg-12 col-xl-12 remove-padding popup-btn-wrap mt30">'

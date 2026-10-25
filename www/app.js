@@ -23,7 +23,7 @@ app.on('ready', function () {
   var iconPath = path.join(__dirname, 'favicon.ico');
 
   mainWindow = new BrowserWindow({
-    title: "IPTVSmartersPro",
+    title: "VLC IPTV",
     icon: iconPath,
     width: 1300,
     height: 900,
@@ -79,7 +79,7 @@ app.on('window-all-closed', () => {
 
 function createMenu() {
   const application = {
-    label: "IPTVSmartersPro",
+    label: "VLC IPTV",
     submenu: [
       {
         label: "Quit",
@@ -95,7 +95,7 @@ function createMenu() {
     label: "About",
     submenu: [
       {
-        label: "IPTV Smarters Pro is a Live IPTV player"
+        label: "VLC IPTV is a Live IPTV player"
       },
       {
         label: "for end-users that provides the facility"
