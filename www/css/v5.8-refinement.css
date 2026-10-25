@@ -1,0 +1,39 @@
+/* IPTV Live TV V5.8: refinement of confirmed V5.7 native elements.
+   No re-parenting, replacement category controls, or video changes. */
+.blueBackgroundCenter.v57-active .scrollBarClass.categoriesPadding {
+  width:35% !important; margin-left:4% !important; height:76% !important;
+}
+#allCategoriesSectionDiv .v57-cell .section {
+  height:68px !important; border-radius:6px !important;
+  background:rgba(255,255,255,.035) !important;
+  border:1px solid rgba(255,255,255,.055) !important;
+  padding:0 24px !important;
+  transition:background-color .15s ease,border-color .15s ease !important;
+}
+#allCategoriesSectionDiv .v57-cell .section:hover {background:rgba(255,255,255,.085) !important;}
+#allCategoriesSectionDiv .v57-cell .section.imageFocus,
+#allCategoriesSectionDiv .v57-cell .section.mouseFocus {
+  background:rgba(200,176,222,.17) !important;
+  border-color:rgba(255,255,255,.86) !important;
+  box-shadow:inset 4px 0 0 #fff,0 0 20px rgba(255,255,255,.07) !important;
+}
+#v57-info {
+  left:43% !important; top:16% !important; width:53% !important; height:72% !important;
+  border-radius:10px !important; padding:clamp(28px,4vw,65px) !important;
+  background:linear-gradient(142deg,rgba(110,91,131,.20),rgba(42,32,57,.35)) !important;
+  border:1px solid rgba(255,255,255,.085) !important;
+  box-shadow:0 24px 60px rgba(6,4,11,.16) !important;
+}
+#v57-info .v57-title{font-size:clamp(32px,4vw,55px) !important; margin:60px 0 24px !important;line-height:1.12 !important;}
+#v57-info .v57-hint{font-size:17px !important;line-height:1.6 !important;}
+#v57-info .v57-rule{margin-top:42px !important;}
+/* Keep the existing Live TV channel list and native WebChimera player.
+   Only change surfaces and focus styles, not widths/heights of the player. */
+.blueBackgroundCenter .liveChannels,
+.blueBackgroundCenter .liveHeadLine{background:rgba(26,21,38,.94) !important;}
+.blueBackgroundCenter .rowSec{border-bottom:1px solid rgba(255,255,255,.065) !important;background-color:rgba(57,47,74,.32) !important;}
+.blueBackgroundCenter .rowSec.imageFocus,
+.blueBackgroundCenter .rowSec.mouseFocus{background:#625574 !important;background-image:none !important;box-shadow:inset 3px 0 0 rgba(255,255,255,.92) !important;}
+.blueBackgroundCenter .epgListing{background:rgba(19,16,26,.8) !important;}
+/* Restrict responsive changes to the redesigned categories view. */
+@media(max-width:1050px){.blueBackgroundCenter.v57-active .scrollBarClass.categoriesPadding{width:40% !important;margin-left:3% !important;}#v57-info{left:46% !important;width:50% !important;}}

@@ -1,0 +1,45 @@
+/* V5.5 Native Live TV refinement. Preserve original controls and player. */
+:root { --v55-bg:#211b2d; --v55-surface:#342c41; --v55-focus:#f7f2fc; }
+/* Category page actual root (confirmed by live DOM inspection). */
+.blueBackgroundCenter {
+ background:radial-gradient(ellipse at 80% 28%,rgba(93,74,114,.35),transparent 64%),linear-gradient(115deg,#191622,#30283e 66%,#211b30) !important;
+ background-image:radial-gradient(ellipse at 80% 28%,rgba(93,74,114,.35),transparent 64%),linear-gradient(115deg,#191622,#30283e 66%,#211b30) !important;
+}
+/* Real React-virtualized items; keep their native position and click handlers. */
+#allCategoriesSectionDiv [id^="sections-"] {
+ border:2px solid rgba(255,255,255,.08) !important;
+ border-radius:15px !important;
+ background:linear-gradient(115deg,rgba(235,224,249,.15),rgba(235,224,249,.065)) !important;
+ box-shadow:0 8px 25px rgba(9,6,18,.15) !important;
+ color:#f7f2fc !important;
+ transition:background .16s ease,border-color .16s ease,box-shadow .16s ease !important;
+}
+#allCategoriesSectionDiv [id^="sections-"].imageFocus,
+#allCategoriesSectionDiv [id^="sections-"]:focus,
+#allCategoriesSectionDiv [id^="sections-"].mouseFocus {
+ border:2px solid var(--v55-focus) !important;
+ outline:none !important;
+ background:linear-gradient(115deg,rgba(232,217,248,.27),rgba(232,217,248,.12)) !important;
+ box-shadow:0 0 0 1px rgba(255,255,255,.14),0 0 22px rgba(221,201,244,.29) !important;
+}
+/* Minimize visual noise in category icon blocks without changing their widths. */
+#allCategoriesSectionDiv .section img {object-fit:contain;}
+#allCategoriesSectionDiv .section p,
+#allCategoriesSectionDiv .section span {color:#faf7ff !important;}
+/* Native channel browser rows. Do not change virtual-list dimensions. */
+.rowSec {background:rgba(40,34,54,.88) !important;border-bottom:1px solid rgba(235,225,248,.095) !important;color:#f6f2fa !important;}
+.rowSec.imageFocus,.rowSec.mouseFocus,.rowSec.playing.imageFocus {
+ background:linear-gradient(90deg,rgba(111,93,132,.92),rgba(76,64,96,.86)) !important;
+ box-shadow:inset 3px 0 0 #eee5fa !important;
+}
+.rowSec img {object-fit:contain;}
+/* Original channel list header and menus. */
+.liveHeadLine {background:rgba(36,29,49,.97) !important;color:#f9f5ff !important;}
+.dropdown-content {background:#2b2439 !important;border:1px solid rgba(245,239,252,.16) !important;box-shadow:0 15px 35px rgba(0,0,0,.42) !important;}
+.dropdown-content a {background:transparent !important;color:#f8f4fc !important;}
+.dropdown-content a:hover,.dropdown-content a.imageFocus,.dropdown-content a:focus {background:#655577 !important;color:#fff !important;}
+/* Refined scrollbars while preserving native scrolling. */
+#allCategoriesSectionDiv ::-webkit-scrollbar,.liveChannels ::-webkit-scrollbar {width:8px !important;}
+#allCategoriesSectionDiv ::-webkit-scrollbar-track,.liveChannels ::-webkit-scrollbar-track {background:#241e31 !important;}
+#allCategoriesSectionDiv ::-webkit-scrollbar-thumb,.liveChannels ::-webkit-scrollbar-thumb {background:#756385 !important;border-radius:8px !important;}
+/* Avoid touching the embedded video, video overlays, React grid sizing, or main app header. */

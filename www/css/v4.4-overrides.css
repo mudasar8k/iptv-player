@@ -1,0 +1,46 @@
+/* IPTV Dashboard V4.4: visual refinements only. Keeps V4.3 navigation intact. */
+#iptv-v4 {
+  background:
+    radial-gradient(ellipse 48% 66% at 76% 34%,rgba(133,112,153,.14),transparent 75%),
+    radial-gradient(ellipse 43% 62% at 32% 81%,rgba(95,69,113,.12),transparent 78%),
+    linear-gradient(113deg,#1b1825 1%,#292337 62%,#362d43 100%) !important;
+}
+/* Header: gentle glass controls; reserve space for the native Go Back control. */
+#iptv-v4 .v4-top {top:7%;right:12%;}
+#iptv-v4 .v4-tool {background:rgba(255,255,255,.105);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
+#iptv-v4 .v4-tool:hover,#iptv-v4 .v4-tool:focus {background:rgba(255,255,255,.19);}
+#iptv-v4 .v4-profile {background:#e52148;}
+/* Preserve V4.3's explicit margins for older Chromium (flex gap can be unsupported). */
+#iptv-v4 .v4-cards {top:35%;height:48%;align-items:flex-end;overflow:visible;}
+#iptv-v4 .v4-card {
+  height:87%;
+  border:1px solid rgba(242,233,251,.14);
+  background:linear-gradient(152deg,rgba(230,222,241,.12) 0%,rgba(177,164,194,.055) 75%,rgba(235,224,247,.03) 100%);
+  box-shadow:0 16px 38px rgba(5,4,12,.18),inset 0 1px 0 rgba(255,255,255,.055);
+  transition:height .20s ease,background .20s ease,border-color .20s ease,box-shadow .20s ease;
+}
+#iptv-v4 .v4-card.is-focused,#iptv-v4 .v4-card:focus,#iptv-v4 .v4-card:hover {
+  height:100%;
+  border-color:rgba(255,255,255,.36);
+  background:linear-gradient(153deg,rgba(226,218,237,.245),rgba(197,179,214,.09) 90%);
+  box-shadow:0 24px 58px rgba(5,4,12,.3),inset 0 1px 0 rgba(255,255,255,.12);
+}
+#iptv-v4 .v4-card.is-focused:after,#iptv-v4 .v4-card:focus:after {
+  left:30%;right:30%;bottom:-4px;height:4px;
+  background:#fff;box-shadow:0 0 15px 5px rgba(255,255,255,.21);
+}
+#iptv-v4 .v4-icon .v4-svg {width:42px;height:42px;}
+#iptv-v4 .v4-label {font-size:24px;letter-spacing:.1px;}
+#iptv-v4 .v4-sub {color:#c3bbd0;}
+#iptv-v4 .v4-clock {right:6.4%;bottom:14%;}
+#iptv-v4 .v4-time {font-size:72px;font-weight:200;}
+#iptv-v4 .v4-date {color:#b4abc3;}
+#iptv-v4 .v4-extra {background:rgba(255,255,255,.042);border-color:rgba(255,255,255,.10);}
+@media(max-width:1100px) {
+  #iptv-v4 .v4-cards {top:35%;height:47%;}
+  #iptv-v4 .v4-time {font-size:58px;}
+}
+@media(max-width:680px) {
+  #iptv-v4 .v4-cards {top:34%;height:43%;}
+  #iptv-v4 .v4-time {font-size:44px;}
+}

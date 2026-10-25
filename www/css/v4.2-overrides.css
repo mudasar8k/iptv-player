@@ -1,0 +1,24 @@
+/* V4.2 refinement, appended after working V4.1 rules. All overrides scoped to V4. */
+#iptv-v4 {position:fixed !important;top:0 !important;left:0 !important;right:0 !important;bottom:0 !important;width:100vw !important;height:100vh !important;min-width:0 !important;min-height:0 !important;z-index:5000 !important;}
+#iptv-v4 .v4-top{left:5.3%;right:7.4%;top:6.6%;height:58px;display:flex;align-items:center;gap:24px;z-index:2;}
+#iptv-v4 .v4-brand{font-size:25px;min-width:unset;flex:0 0 auto;white-space:nowrap;letter-spacing:-.9px;}
+#iptv-v4 .v4-brand small{font-size:12px;}
+#iptv-v4 .v4-sep{flex:0 0 1px;margin-left:10px;margin-right:2px;}
+#iptv-v4 .v4-tool{width:46px;height:46px;min-width:46px;padding:0;flex:0 0 46px;position:relative;}
+#iptv-v4 .v4-search{flex:1 1 auto;min-width:100px;margin-left:-8px;white-space:nowrap;font-size:14px;}
+#iptv-v4 .v4-actions{display:flex;align-items:center;justify-content:flex-end;gap:22px;margin-left:auto;padding-right:45px;flex:0 0 auto;}
+#iptv-v4 .v4-profile{background:#e51d4c !important;}
+#iptv-v4 .v4-svg{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;color:#f5effa;}
+#iptv-v4 .v4-svg svg{display:block;width:100%;height:100%;}
+#iptv-v4 .v4-cards{left:5.5%;top:35%;width:52%;height:47%;gap:18px;display:flex;align-items:flex-end;}
+#iptv-v4 .v4-card{width:calc((100% - 36px)/3);flex:1 1 0;min-width:0;height:87%;padding:22px 23px 30px;border:1px solid rgba(228,218,243,.19);background:linear-gradient(155deg,rgba(255,255,255,.13),rgba(255,255,255,.035) 78%);box-shadow:0 12px 40px rgba(7,4,16,.24);transition:height .18s ease,transform .18s ease,background .18s ease;}
+#iptv-v4 .v4-card+.v4-card{margin-left:0;}
+#iptv-v4 .v4-card.is-focused,#iptv-v4 .v4-card:focus,#iptv-v4 .v4-card:hover{height:100%;background:linear-gradient(150deg,rgba(255,255,255,.22),rgba(255,255,255,.07));}
+#iptv-v4 .v4-icon{font-size:inherit;margin-bottom:16px;line-height:1;}
+#iptv-v4 .v4-icon .v4-svg{width:45px;height:45px;}
+#iptv-v4 .v4-label{font-weight:300;font-size:26px;}
+#iptv-v4 .v4-chip{top:15px;right:13px;}
+#iptv-v4 .v4-clock{right:6.4%;bottom:16%;}
+#iptv-v4 .v4-foot{bottom:5%;}
+#iptv-v4 .v4-account{right:7%;top:27%;}
+@media (max-width:980px){#iptv-v4 .v4-top{gap:13px;right:5%}#iptv-v4 .v4-brand{font-size:20px}#iptv-v4 .v4-sep{margin-left:0}#iptv-v4 .v4-actions{gap:8px;padding-right:28px}#iptv-v4 .v4-cards{width:62%;gap:10px}#iptv-v4 .v4-card{padding:16px 14px 23px}#iptv-v4 .v4-label{font-size:22px}#iptv-v4 .v4-clock{right:4%;} }

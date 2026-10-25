@@ -1,0 +1,67 @@
+/* IPTV Live TV V5.0: visual-only, designed to match Dashboard V4.4. */
+/* Existing ids, events, React lists and player remain unchanged. */
+:root { --v5-bg:#1d1928; --v5-surface:#2d273a; --v5-text:#f7f4fb; --v5-dim:#b8afc8; }
+/* Original blue wallpaper is used by multiple inner screens. */
+#mainContent div[style*="backgroundHome.png"],
+#mainContent .blueBackgroundCenter {
+  background-image:none !important;
+  background-color:var(--v5-bg) !important;
+}
+/* Category grid: retains existing column widths and focusable #sections-* elements. */
+#mainContent .categoriesSection .section {
+  background:linear-gradient(135deg,rgba(255,255,255,.105),rgba(255,255,255,.045)) !important;
+  color:var(--v5-text) !important;
+  border:2px solid rgba(255,255,255,.10) !important;
+  border-radius:13px !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.13);
+  transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease !important;
+}
+#mainContent .categoriesSection .section.imageFocus,
+#mainContent .categoriesSection .section:focus {
+  background:linear-gradient(135deg,rgba(255,255,255,.19),rgba(255,255,255,.085)) !important;
+  border-color:#f4effc !important;
+  box-shadow:0 0 0 1px rgba(255,255,255,.16),0 0 24px rgba(210,193,234,.24) !important;
+  transform:scale(1.015) !important;
+}
+#mainContent .categoriesSection .section p,
+#mainContent .categoriesSection .section span { color:var(--v5-text) !important; }
+/* Live channel list and its selection. Avoid changing row dimensions used by react-virtualized. */
+#mainContent .liveChannels,
+#mainContent .liveHeadLine {
+  background:rgba(22,18,31,.94) !important;
+  color:var(--v5-text) !important;
+}
+#mainContent .rowSec {
+  background:rgba(36,31,49,.78) !important;
+  border-bottom:1px solid rgba(255,255,255,.11) !important;
+  color:var(--v5-text) !important;
+  transition:background-color .16s ease !important;
+}
+#mainContent .rowSec.imageFocus,
+#mainContent .rowSec.playing.imageFocus {
+  background:linear-gradient(90deg,#655476,#494057) !important;
+  border-left:4px solid #eee6fc !important;
+}
+#mainContent .rowSec h1,
+#mainContent .rowSec span,
+#mainContent .liveHeadLine p { color:var(--v5-text) !important; }
+/* Existing context-menu anchors remain clickable and in the same order. */
+#mainContent .dropdown-content {
+  background:#292338 !important;
+  border:1px solid rgba(255,255,255,.19) !important;
+  box-shadow:0 14px 35px rgba(0,0,0,.4) !important;
+  border-radius:8px !important;
+  overflow:hidden;
+}
+#mainContent .dropdown-content a {
+  background:#292338 !important;
+  color:#eee9f5 !important;
+  border-bottom:1px solid rgba(255,255,255,.07) !important;
+}
+#mainContent .dropdown-content a:hover,
+#mainContent .dropdown-content a:focus,
+#mainContent .dropdown-content a.imageFocus {
+  background:#645473 !important;
+  color:white !important;
+}
+/* Native video element and player controls are intentionally untouched. */

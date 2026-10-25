@@ -1,0 +1,54 @@
+/* V5.9.1 layout repair. Keeps the native category renderer and player unchanged. */
+:root{--v591-bg:#1d1727;--v591-line:rgba(233,221,246,.14)}
+.blueBackgroundCenter.v57-active{background:radial-gradient(ellipse at 76% 19%,#352940 0%,#241d30 60%,#1c1626 100%)!important}
+/* The V5.9 header had occupied the narrow space between category list and details. */
+#v59-category-header,#v59-browser-title,#v59-topline,#v59-search{display:none!important}
+/* Narrow but usable native one-column category list, leave virtualized cell geometry intact. */
+.blueBackgroundCenter.v57-active .scrollBarClass.categoriesPadding{
+  position:absolute!important;left:4%!important;margin-left:0!important;
+  top:18%!important;width:29%!important;height:73%!important;
+  padding:0!important;overflow:visible!important;
+}
+#allCategoriesSectionDiv .v57-row{width:100%!important;margin:0!important;padding:0!important}
+#allCategoriesSectionDiv .v57-cell{float:none!important;width:100%!important;padding:0 8px 0 0!important}
+#allCategoriesSectionDiv .v57-cell .section{
+  box-sizing:border-box!important;display:flex!important;align-items:center!important;
+  height:60px!important;min-height:0!important;padding:0 18px!important;margin:0!important;
+  border-radius:3px!important;background:rgba(255,255,255,.025)!important;
+  border:1px solid rgba(255,255,255,.09)!important;box-shadow:none!important;
+}
+#allCategoriesSectionDiv .v57-cell .section img{display:none!important}
+#allCategoriesSectionDiv .v57-cell .section p{
+  color:#f5f0f8!important;font-size:15px!important;font-weight:500!important;
+  margin:0!important;position:static!important;text-align:left!important;
+}
+#allCategoriesSectionDiv .v57-cell .section.imageFocus,
+#allCategoriesSectionDiv .v57-cell .section.mouseFocus{
+  background:rgba(165,142,188,.22)!important;border-color:rgba(245,236,255,.8)!important;
+  box-shadow:inset 4px 0 0 #f7f0ff,0 0 14px rgba(241,225,255,.12)!important;
+}
+/* Fill the right panel with useful selected-category context; no overlay on rows. */
+#v57-info.v591-panel{
+  left:37%!important;top:18%!important;width:59%!important;height:73%!important;
+  overflow:hidden!important;padding:clamp(24px,3vw,44px)!important;
+  border-radius:6px!important;box-sizing:border-box!important;
+  border:1px solid var(--v591-line)!important;
+  background:linear-gradient(140deg,rgba(255,255,255,.075),rgba(255,255,255,.016))!important;
+  pointer-events:none!important;display:flex!important;flex-direction:column!important;
+  align-items:stretch!important;
+}
+#v57-info.v591-panel .v57-eyebrow{font:600 11px Segoe UI,Arial,sans-serif!important;letter-spacing:2px!important;color:#c7bcd5!important}
+#v57-info.v591-panel .v591-art{flex:1;min-height:130px;display:flex;align-items:center;justify-content:center}
+#v57-info.v591-panel .v591-monitor{width:130px;height:88px;border:2px solid rgba(239,231,246,.48);border-radius:8px;display:flex;align-items:center;justify-content:center;position:relative}
+#v57-info.v591-panel .v591-monitor:after{content:'';position:absolute;bottom:-11px;width:46px;height:2px;background:rgba(239,231,246,.38)}
+#v57-info.v591-panel .v591-play{width:0;height:0;border-top:13px solid transparent;border-bottom:13px solid transparent;border-left:20px solid #ece4f5;margin-left:6px}
+#v57-info.v591-panel .v57-title{
+ font:600 clamp(23px,2.45vw,37px)/1.2 Segoe UI,Arial,sans-serif!important;
+ color:#fff!important;margin:0 0 16px!important;max-width:100%!important;word-break:normal!important;
+}
+#v57-info.v591-panel .v57-hint{font:15px/1.65 Segoe UI,Arial,sans-serif!important;color:#c8bfd1!important;max-width:500px!important}
+#v57-info.v591-panel .v57-rule{height:1px!important;width:100%!important;box-shadow:none!important;margin:24px 0 0!important;opacity:.3!important}
+#v57-info.v591-panel .v591-footer{font:12px/1.5 Segoe UI,Arial,sans-serif;color:#a99fb5;margin-top:18px}
+/* Native player/rows are left mounted, preserve video and navigation. */
+.blueBackgroundCenter .rowSec.imageFocus,.blueBackgroundCenter .rowSec.mouseFocus,.blueBackgroundCenter .rowSec.playing{background:rgba(147,119,169,.28)!important}
+@media(max-width:900px){.blueBackgroundCenter.v57-active .scrollBarClass.categoriesPadding{width:33%!important}#v57-info.v591-panel{left:41%!important;width:55%!important;padding:22px!important}}

@@ -1,0 +1,44 @@
+/* V5.6 / native category list styling; no overlays, event interception, or grid geometry changes. */
+:root{--v56-text:#f5effb;--v56-muted:#c7bcd2;--v56-purple:#78648b;}
+/* Scope exclusively to original Live TV category controls. */
+#allCategoriesSectionDiv [id^="sections-"]{
+  position:relative !important;
+  background:rgba(255,255,255,.035) !important;
+  background-image:none !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(236,225,247,.13) !important;
+  border-left:3px solid transparent !important;
+  border-radius:5px !important;
+  box-shadow:none !important;
+  color:var(--v56-text) !important;
+  transition:background-color .14s ease,border-color .14s ease !important;
+}
+#allCategoriesSectionDiv [id^="sections-"]:hover,
+#allCategoriesSectionDiv [id^="sections-"].mouseFocus{
+  background:rgba(185,162,209,.11) !important;
+  border-left-color:rgba(230,216,246,.65) !important;
+}
+#allCategoriesSectionDiv [id^="sections-"].imageFocus,
+#allCategoriesSectionDiv [id^="sections-"]:focus,
+#allCategoriesSectionDiv [id^="sections-"].imageFocus.mouseFocus{
+  background:linear-gradient(90deg,rgba(151,125,179,.27),rgba(105,85,131,.10)) !important;
+  border-left:3px solid #f8f3ff !important;
+  border-bottom-color:rgba(255,255,255,.22) !important;
+  outline:1px solid rgba(245,236,255,.6) !important;
+  outline-offset:-1px !important;
+  box-shadow:0 0 0 1px rgba(240,225,255,.10),0 4px 15px rgba(11,7,21,.23) !important;
+}
+/* The per-category monitor graphic is purely decorative: keep the original clickable item and label. */
+#allCategoriesSectionDiv [id^="sections-"] img[src*="tv-shows"],
+#allCategoriesSectionDiv [id^="sections-"] img[src*="tv_show"]{
+  visibility:hidden !important;
+}
+#allCategoriesSectionDiv .categoriesSection .section p,
+#allCategoriesSectionDiv .categoriesSection .section span{
+  color:var(--v56-text) !important;
+  text-shadow:none !important;
+}
+/* Keep established V4.4/V5.2 backdrop; use restrained focus and channels styling. */
+#allCategoriesSectionDiv ::-webkit-scrollbar{width:7px !important;}
+#allCategoriesSectionDiv ::-webkit-scrollbar-thumb{background:#7b698d !important;border-radius:8px !important;}
+.rowSec.imageFocus,.rowSec.mouseFocus{box-shadow:inset 3px 0 0 #f7f0ff !important;}

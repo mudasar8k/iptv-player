@@ -1,0 +1,68 @@
+/* IPTV Dashboard V4.3 - visual-only refinement on top of V4.2.
+   No interaction, navigation, or playback scripts are changed. */
+#iptv-v4 {
+  background: radial-gradient(ellipse 58% 75% at 83% 43%,rgba(105,82,126,.19),transparent 72%),
+              linear-gradient(112deg,#1b1825 0%,#292338 67%,#332a41 100%) !important;
+}
+/* Anchor header controls and leave space for the existing Go Back icon. */
+#iptv-v4 .v4-top {left:5.4%;right:11%;top:7%;height:55px;gap:0 !important;}
+#iptv-v4 .v4-brand {margin-right:26px;}
+#iptv-v4 .v4-sep {margin-left:0;margin-right:25px;}
+#iptv-v4 .v4-search {margin-left:13px;}
+#iptv-v4 .v4-actions {gap:0 !important;padding-right:0;margin-left:auto;}
+#iptv-v4 .v4-actions .v4-tool:first-child {margin-right:18px;}
+/* Older Chromium can ignore flex gap; explicit margins are deliberate. */
+#iptv-v4 .v4-cards {
+  left:5.7%;top:36%;width:55%;height:46%;
+  display:flex;align-items:flex-end;gap:0 !important;
+  overflow:visible;
+}
+#iptv-v4 .v4-card {
+  flex:0 0 30% !important;width:30% !important;max-width:30%;
+  height:88%;min-width:0;margin:0 !important;
+  padding:20px 19px 28px;
+  border:1px solid rgba(225,216,236,.16);
+  background:linear-gradient(160deg,rgba(240,235,248,.13),rgba(235,229,244,.035) 88%);
+  box-shadow:0 14px 34px rgba(8,5,15,.18);
+  transition:height .18s ease,background .18s ease,box-shadow .18s ease;
+}
+#iptv-v4 .v4-card+.v4-card {margin-left:3.2% !important;}
+#iptv-v4 .v4-card.is-focused,
+#iptv-v4 .v4-card:focus,
+#iptv-v4 .v4-card:hover {
+  height:100%;
+  background:linear-gradient(160deg,rgba(239,235,245,.23),rgba(231,223,241,.07));
+  border-color:rgba(246,239,250,.37);
+  box-shadow:0 22px 50px rgba(9,5,18,.27);
+}
+#iptv-v4 .v4-card.is-focused:after,#iptv-v4 .v4-card:focus:after {
+  left:28%;right:28%;height:4px;bottom:-3px;
+  background:#fff;box-shadow:0 0 19px 6px rgba(255,255,255,.15);
+}
+#iptv-v4 .v4-icon .v4-svg {width:40px;height:40px;}
+#iptv-v4 .v4-label {font-size:24px;}
+#iptv-v4 .v4-sub {font-size:12px;}
+#iptv-v4 .v4-chip {font-size:10px;padding:4px 8px;}
+#iptv-v4 .v4-clock {right:6.2%;bottom:15%;}
+#iptv-v4 .v4-time {font-size:68px;}
+#iptv-v4 .v4-foot {left:5.7%;bottom:5%;}
+#iptv-v4 .v4-extra {margin-right:8px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.045);}
+/* Adapt layout at reduced window width, including when DevTools is docked. */
+@media(max-width:1100px) {
+  #iptv-v4 .v4-cards {left:5%;width:68%;top:36%;}
+  #iptv-v4 .v4-card {padding:15px 13px 23px;}
+  #iptv-v4 .v4-card+.v4-card {margin-left:2.8% !important;}
+  #iptv-v4 .v4-brand {margin-right:12px;}
+  #iptv-v4 .v4-sep {margin-right:12px;}
+  #iptv-v4 .v4-clock {right:4%;}
+}
+@media(max-width:680px) {
+  #iptv-v4 .v4-top {right:4%;left:4%;}
+  #iptv-v4 .v4-cards {left:4%;width:91%;top:34%;height:43%;}
+  #iptv-v4 .v4-card {padding:11px 9px 17px;}
+  #iptv-v4 .v4-card+.v4-card {margin-left:2.5% !important;}
+  #iptv-v4 .v4-label {font-size:18px;}
+  #iptv-v4 .v4-sub {font-size:11px;}
+  #iptv-v4 .v4-clock {bottom:10%;right:4%;}
+  #iptv-v4 .v4-time {font-size:44px;}
+}

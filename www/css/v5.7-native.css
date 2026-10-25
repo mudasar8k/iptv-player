@@ -1,0 +1,68 @@
+/* V6.1 simple categories; only when React category rows use v61-simple-row. */
+.blueBackgroundCenter.v61-simple-active .scrollBarClass.categoriesPadding {
+  width: 91% !important; margin-left: 4.5% !important; padding: 0 !important;
+  height: 76% !important; overflow: visible !important;
+}
+#allCategoriesSectionDiv .v61-simple-row {
+  display: flex !important; width: 100% !important; padding: 0 !important;
+  margin: 0 !important; gap: 22px !important; box-sizing: border-box !important;
+}
+#allCategoriesSectionDiv .v61-simple-cell {
+  width: calc(50% - 11px) !important; flex: 0 0 calc(50% - 11px) !important;
+  float: none !important; padding: 0 !important; min-width: 0 !important;
+}
+#allCategoriesSectionDiv .v61-simple-cell .section {
+  width: 100% !important; height: 64px !important; min-height: 0 !important;
+  margin: 0 !important; padding: 0 20px !important; box-sizing: border-box !important;
+  border-radius: 7px !important; border: 1px solid rgba(255,255,255,.09) !important;
+  background: rgba(255,255,255,.045) !important; box-shadow: none !important;
+  display: flex !important; align-items: center !important;
+}
+#allCategoriesSectionDiv .v61-simple-cell .section img { display: none !important; }
+#allCategoriesSectionDiv .v61-simple-cell .section p { position: static !important; margin: 0 !important; font-size: 17px !important; }
+#allCategoriesSectionDiv .v61-simple-cell .section .floatLeft { display: flex !important; align-items: center !important; }
+#allCategoriesSectionDiv .v61-simple-cell .section.imageFocus,
+#allCategoriesSectionDiv .v61-simple-cell .section.mouseFocus {
+  border-color: #f6efff !important; background: rgba(184,165,211,.20) !important;
+  box-shadow: 0 0 12px rgba(255,255,255,.10) !important;
+}
+#v57-info, #v53-browser-info, #v59-category-panel, #v6-browser { display:none !important; }
+
+/* V6.2 only: decorations inside V6.1 native category tiles. */
+#allCategoriesSectionDiv .v61-simple-cell .section{gap:13px!important;}
+#allCategoriesSectionDiv .v61-simple-cell .section .v62-icon{
+  display:inline-flex!important; flex:0 0 25px; width:25px; height:30px;
+  align-items:center; justify-content:center; font:normal 23px/1 'Segoe UI Symbol','Segoe UI',sans-serif;
+  color:#e5daed; opacity:.96; pointer-events:none;
+}
+#allCategoriesSectionDiv .v61-simple-cell .section .floatLeft{
+  flex:1 1 auto!important; min-width:0!important; overflow:hidden;
+}
+#allCategoriesSectionDiv .v61-simple-cell .section .floatLeft p,
+#allCategoriesSectionDiv .v61-simple-cell .section .floatLeft p span{
+  overflow:hidden!important; text-overflow:ellipsis!important; white-space:nowrap!important;
+}
+#allCategoriesSectionDiv .v61-simple-cell .section .v62-count{
+  display:inline-flex!important; min-width:32px; padding:4px 9px; flex:0 0 auto;
+  border:1px solid rgba(236,221,246,.19); border-radius:12px;
+  color:#d4c5e4; background:rgba(245,232,255,.06);
+  font:500 12px/1.3 'Segoe UI',Arial,sans-serif; justify-content:center;
+  pointer-events:none;
+}
+
+/* V6.2.1: Tested 20px visible gap between native category cards only.
+   Do not change the parent columns, selection logic, or video player. */
+#allCategoriesSectionDiv .v61-simple-row > .v61-simple-cell {
+  padding: 0 !important;
+}
+#allCategoriesSectionDiv .v61-simple-row > .v61-simple-cell:nth-child(odd) > .section {
+  width: calc(100% - 20px) !important;
+  max-width: calc(100% - 20px) !important;
+  margin-right: 20px !important;
+  box-sizing: border-box !important;
+}
+#allCategoriesSectionDiv .v61-simple-row > .v61-simple-cell:nth-child(even) > .section {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}

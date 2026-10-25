@@ -1,0 +1,34 @@
+{
+  "name": "IPTVSmartersPro",
+  "description": "IPTV Smarters Pro is a Live IPTV player for end-users that provides the facility to watch Live TV, VOD, Series.",
+  "version": "1.1.2",
+  "main": "www/app.js",
+  "homepage": "https://www.whmcssmarters.com",
+  "author": {
+    "name": "IPTV Smarters Pro",
+    "email": "aman@newsparktechnology.com",
+    "url": "https://www.whmcssmarters.com/"
+  },
+  "copyright": "2022 IPTVSmartersPro - All Rights Reserved",
+  "dependencies": {
+    "babel-preset-react": "^6.24.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-virtualized": "^9.22.2",
+    "react-virtualized-auto-sizer": "^1.0.2",
+    "react-window": "^1.8.5",
+    "wcjs-player": "^6.0.1"
+  },
+  "cordova": {
+    "plugins": {
+      "cordova-plugin-whitelist": {}
+    },
+    "platforms": [
+      "browser",
+      "electron"
+    ]
+  },
+  "dmg": {
+    "sign": false
+  }
+}

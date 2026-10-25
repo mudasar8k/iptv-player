@@ -1,0 +1,43 @@
+/* Live TV V5.2: category view selector correction. CSS only. */
+/* The dynamically generated category page uses .blueBackgroundCenter and
+   #allCategoriesSectionDiv > ... > #sections-N rather than .categoriesSection. */
+#mainContent .blueBackgroundCenter,
+.blueBackgroundCenter {
+  background: radial-gradient(ellipse at 80% 35%,rgba(92,68,113,.26),transparent 58%),linear-gradient(115deg,#191622,#30283e 65%,#211b30) !important;
+  background-image: radial-gradient(ellipse at 80% 35%,rgba(92,68,113,.26),transparent 58%),linear-gradient(115deg,#191622,#30283e 65%,#211b30) !important;
+  background-color:#201b2b !important;
+}
+/* Applies to category screens and not to the Live TV video player. */
+#allCategoriesSectionDiv .section,
+#allCategoriesSectionDiv [id^="sections-"] {
+  background:linear-gradient(145deg,rgba(232,222,242,.13),rgba(232,222,242,.055)) !important;
+  color:#f6f2fb !important;
+  border:3px solid transparent !important;
+  border-radius:13px !important;
+  box-shadow:0 10px 30px rgba(9,7,14,.22) !important;
+  outline:none !important;
+  transition:background-color .16s ease,box-shadow .16s ease,border-color .16s ease !important;
+}
+#allCategoriesSectionDiv .section.imageFocus,
+#allCategoriesSectionDiv [id^="sections-"].imageFocus,
+#allCategoriesSectionDiv .section:focus,
+#allCategoriesSectionDiv [id^="sections-"]:focus {
+  background:linear-gradient(145deg,rgba(232,222,242,.24),rgba(232,222,242,.10)) !important;
+  border:3px solid #f5f0fc !important;
+  outline:none !important;
+  box-shadow:0 0 0 2px rgba(255,255,255,.10),0 0 22px rgba(223,205,243,.30) !important;
+  transform:none !important;
+}
+#allCategoriesSectionDiv .section .floatLeft p,
+#allCategoriesSectionDiv .section .floatLeft span {
+  color:#f6f2fb !important;
+}
+/* Known parent row wrappers also receive focus in some navigation paths. */
+#allCategoriesSectionDiv .imageFocus {
+  outline-color:#f5f0fc !important;
+  border-color:#f5f0fc !important;
+}
+/* Dark scrollbar limited to category screen container. */
+.blueBackgroundCenter .scrollBarClass::-webkit-scrollbar {width:9px !important;}
+.blueBackgroundCenter .scrollBarClass::-webkit-scrollbar-track {background:#211b2e !important;}
+.blueBackgroundCenter .scrollBarClass::-webkit-scrollbar-thumb {background:#685974 !important;border-radius:7px !important;}

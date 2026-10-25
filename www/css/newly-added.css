@@ -1,0 +1,7 @@
+/* Scoped to the new Movies row only. */
+#v70-newly-added .heroSlider-fixed { position:relative; }
+#v70-new-slider { display:flex; gap:9px; overflow-x:auto; overflow-y:hidden; scroll-behavior:smooth; }
+#v70-new-slider > .sliderimage-div { flex:0 0 auto; }
+#v70-newly-added .v70-scroll { position:absolute; top:45%; z-index:6; border:0; border-radius:50%; width:40px; height:40px; background:#fff; color:#222; font-size:30px; cursor:pointer; }
+#v70-newly-added .v70-left {left:2px;}
+#v70-newly-added .v70-right {right:2px;}

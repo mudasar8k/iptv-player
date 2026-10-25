@@ -1,0 +1,44 @@
+/* IPTV CUSTOM DASHBOARD V2 */
+
+html, body {
+    background: #101116 !important;
+    color: #f5f5f7 !important;
+}
+
+/* Main homepage background */
+body > div {
+    background-color: #101116 !important;
+    background-image: none !important;
+}
+
+/* Main dashboard artwork */
+img.dashboard_boxes {
+    filter: grayscale(1) brightness(0.65) !important;
+    border-radius: 14px !important;
+}
+
+/* Highlight focused dashboard items */
+img.dashboard_boxes.imageFocus,
+.imageFocus img.dashboard_boxes {
+    filter: grayscale(0.65) brightness(0.9) !important;
+    outline: 3px solid #e50914 !important;
+}
+
+/* Dark category cards */
+.listIcons,
+.section {
+    background-color: #20232d !important;
+    border-radius: 12px !important;
+}
+
+/* Red keyboard focus */
+.listIcons.imageFocus,
+.section.imageFocus {
+    outline: 3px solid #e50914 !important;
+}
+
+/* Navigation */
+.leftMenu,
+#navBar {
+    background-color: #17191f !important;
+}

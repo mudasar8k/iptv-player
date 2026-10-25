@@ -1,0 +1,55 @@
+/* IPTV Live TV V5.1: unified V4.4 look; CSS-only. */
+/* Override the original wallpaper on Live TV parent layers. */
+#mainContent .mainHome,
+#mainContent .blueBackgroundCenter,
+#mainContent [style*="backgroundHome.png"],
+#mainContent [style*="background.jpg"] {
+  background-image:none !important;
+  background-color:#201b2b !important;
+}
+/* When the inner screen itself is the wallpaper-bearing element. */
+
+/* Scoped visual backgrounds; no video or player rules. */
+#mainContent .categoriesSection,
+#mainContent .liveChannels,
+#mainContent .liveHeadLine {background-color:rgba(30,25,41,.96) !important;}
+#mainContent .categoriesSection .section {
+ background:linear-gradient(145deg,rgba(232,222,242,.13),rgba(232,222,242,.055)) !important;
+ border:1px solid rgba(244,239,251,.14) !important;
+ border-radius:13px !important;
+ color:#f6f2fb !important;
+ box-shadow:0 10px 30px rgba(9,7,14,.22) !important;
+}
+#mainContent .categoriesSection .section.imageFocus,
+#mainContent .categoriesSection .section:focus {
+ background:linear-gradient(145deg,rgba(232,222,242,.22),rgba(232,222,242,.085)) !important;
+ border:2px solid #f5f0fc !important;
+ outline:none !important;
+ box-shadow:0 0 0 2px rgba(255,255,255,.09),0 0 18px rgba(223,205,243,.25) !important;
+}
+/* Red focus is often applied to the parent and borders via nested rules. */
+#mainContent .categoriesSection .imageFocus,
+#mainContent .categoriesSection [class*="imageFocus"] {
+ outline-color:#f5f0fc !important;
+ border-color:#f5f0fc !important;
+}
+#mainContent .rowSec {
+ background:rgba(40,34,53,.84) !important;
+ border-bottom:1px solid rgba(255,255,255,.10) !important;
+ color:#f4effa !important;
+}
+#mainContent .rowSec.imageFocus {
+ background:linear-gradient(90deg,rgba(113,95,133,.92),rgba(78,65,95,.92)) !important;
+ border-left:3px solid #f4effc !important;
+}
+#mainContent .rowSec h1,#mainContent .rowSec span {color:#f4effa !important;}
+#mainContent .dropdown-content {background:#292337 !important;color:#f8f3fc !important;border:1px solid rgba(255,255,255,.16) !important;box-shadow:0 16px 40px rgba(0,0,0,.36) !important;}
+#mainContent .dropdown-content a {background:#292337 !important;color:#f8f3fc !important;}
+#mainContent .dropdown-content a:hover,#mainContent .dropdown-content a.imageFocus {background:#655574 !important;color:white !important;}
+/* Limit scrollbar styling to list containers, keeping dimensions intact. */
+#mainContent .categoriesSection ::-webkit-scrollbar,
+#mainContent .liveChannels ::-webkit-scrollbar {width:9px;}
+#mainContent .categoriesSection ::-webkit-scrollbar-track,
+#mainContent .liveChannels ::-webkit-scrollbar-track {background:#211b2e;}
+#mainContent .categoriesSection ::-webkit-scrollbar-thumb,
+#mainContent .liveChannels ::-webkit-scrollbar-thumb {background:#685974;border-radius:7px;}

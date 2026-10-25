@@ -1,0 +1,54 @@
+﻿node_modules/
+*.asar
+*.asar.unpacked/
+*.log
+.env
+.env.*
+!.env.example
+*.m3u
+*.m3u8
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+backups/
+Backups/
+dist/
+release/
+Custom-Test-UserData/
+
+# Dependencies and generated output
+node_modules/
+platforms/
+dist/
+build/
+release/
+*.asar
+*.asar.unpacked/
+*.zip
+*.log
+
+# Secrets and user data
+.env
+.env.*
+!.env.example
+*.m3u
+*.m3u8
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+*.key
+*.pem
+Custom-Test-UserData/
+backups/
+Backups/
+
+# Local settings
+settings_place_in_electron_platform.json
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+
