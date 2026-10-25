@@ -26,23 +26,16 @@
     var end = Math.min(state.shown + pageSize, state.items.length);
 
     for (var i=state.shown; i<end; i++) {
-      (function (category) {
+      (function (category,index) {
         var button = element(
           'button',
           category.category_name || 'Unnamed category',
           'catalog-card'
         );
         button.type = 'button';
-        button.addEventListener('click',function () {
-          var detail = document.getElementById('catalog-selected');
-          if (detail) {
-            detail.textContent =
-              'Selected: ' + category.category_name +
-              ' — Content listing will be connected next.';
-          }
-        });
+        button.addEventListener('click',function () { loadItems(category,index); });
         grid.appendChild(button);
-      }(state.items[i]));
+      }(state.items[i],i));
     }
 
     state.shown = end;
@@ -87,9 +80,64 @@
     if (first) first.focus();
   }
 
+  var selectedCategory = null;
+  var categoriesFocus = null;
+  function clearSelection() { selectedCategory=null; }
+  window.VLCCatalogBack = function () {
+    if(!selectedCategory)return false;
+    selectedCategory=null;
+    render(state.items);
+    if(categoriesFocus && categoriesFocus < state.items.length){
+      while(state.shown<=categoriesFocus && state.shown<state.items.length)showMore();
+      var buttons=container.querySelectorAll('.catalog-card');
+      if(buttons[categoriesFocus])buttons[categoriesFocus].focus();
+    }
+    return true;
+  };
+  async function loadItems(category,index) {
+    selectedCategory=category;
+    categoriesFocus=index;
+    message('Loading '+category.category_name+'...');
+    var section=state.section;
+    try {
+      var token=localStorage.getItem('vlc_device_token_v1');
+      if(!token)throw Error('Device not paired');
+      var qs=new URLSearchParams({section:section,accountId:state.accountId,categoryId:String(category.category_id)});
+      var response=await fetch('/api/device/items?'+qs.toString(),{headers:{Authorization:'Bearer '+token}});
+      var data=await response.json();
+      if(!response.ok)throw Error(data.error||'Could not load content');
+      if(state.section!==section || selectedCategory!==category)return;
+      container.replaceChildren();
+      var count=element('p',category.category_name+' â€” '+data.items.length+' items'+(data.limited?' (showing first 1200)':''),'catalog-count');
+      container.appendChild(count);
+      var back=element('button','â† Back to categories','catalog-more');
+      back.addEventListener('click',function(){window.VLCCatalogBack();});
+      container.appendChild(back);
+      var grid=element('div',undefined,'catalog-grid');grid.className+=' catalog-items';
+      container.appendChild(grid);
+      data.items.forEach(function(item){
+        var card=element('button',undefined,'catalog-card catalog-item');
+        card.type='button';
+        if(item.image && /^https?:\/\//i.test(item.image)){
+          var img=document.createElement('img');img.src=item.image;img.alt='';img.loading='lazy';
+          img.referrerPolicy='no-referrer';img.onerror=function(){img.remove();};card.appendChild(img);
+        }
+        card.appendChild(element('span',item.name));
+        card.addEventListener('click',function(){
+          var note=document.getElementById('vlc-item-message');
+          if(!note){note=element('p',undefined,'catalog-selected');note.id='vlc-item-message';container.insertBefore(note,grid);}
+          note.textContent='Selected: '+item.name+'. Playback integration is the next phase.';
+        });
+        grid.appendChild(card);
+      });
+      if(!data.items.length)container.appendChild(element('p','No content in this category.','catalog-message'));
+      back.focus();
+    }catch(e){message(e.message);var back=element('button','Back to categories','catalog-more');back.addEventListener('click',function(){window.VLCCatalogBack();});container.appendChild(back);back.focus();}
+  }
   window.VLCLoadCategories = async function (section) {
     if (!['live','movies','series'].includes(section)) return;
 
+    clearSelection();
     state.section = section;
     message('Loading ' + section + ' categories...');
 
@@ -119,6 +167,7 @@
       }
 
       var account = me.accounts[0];
+      state.accountId = account.id;
 
       var query = new URLSearchParams({
         section:section,

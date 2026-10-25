@@ -32,7 +32,7 @@
   }
   function goBack() {
     if (current === 'player') { video.pause(); video.removeAttribute('src'); video.load(); screen(previous); return; }
-    if (current === 'section') { screen('home'); return; }
+    if (current === 'section') { if (window.VLCCatalogBack && window.VLCCatalogBack()) return; screen('home'); return; }
     // On Home, leave system Back behavior to webOS (no forced application exit).
   }
   function openPlayer(url) {

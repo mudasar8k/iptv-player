@@ -130,7 +130,47 @@ async function api(req,res,url){
  if(req.method==='GET'&&url.pathname==='/api/device/me'){
   const d=session(req);if(!d)return send(res,401,{error:'Device not authorized'});d.lastSeen=new Date().toISOString();save();return send(res,200,{device:safeDevice(d),accounts:d.accounts.map(id=>db.accounts.find(a=>a.id===id)).filter(Boolean).map(safeAccount)});
  }
-   if(req.method==='GET'&&url.pathname==='/api/device/catalog'){
+   if(req.method==='GET'&&url.pathname==='/api/device/items'){
+    const device=session(req);
+    if(!device)return send(res,401,{error:'Device not authorized'});
+    const section=url.searchParams.get('section');
+    const accountId=url.searchParams.get('accountId');
+    const categoryId=url.searchParams.get('categoryId');
+    const actions={live:'get_live_streams',movies:'get_vod_streams',series:'get_series'};
+    if(!Object.prototype.hasOwnProperty.call(actions,section))return send(res,400,{error:'Invalid section'});
+    if(!/^[0-9]{1,16}$/.test(categoryId||''))return send(res,400,{error:'Invalid category'});
+    if(device.permissions[section]!==true||!device.accounts.includes(accountId))return send(res,403,{error:'Access denied'});
+    const account=db.accounts.find(a=>a.id===accountId);
+    if(!account)return send(res,404,{error:'Account not found'});
+    try{
+      const endpoint=new URL(account.host.replace(/\/+$/,'')+'/player_api.php');
+      endpoint.searchParams.set('username',account.username);
+      endpoint.searchParams.set('password',decryptSecret(account.secret));
+      endpoint.searchParams.set('action',actions[section]);
+      endpoint.searchParams.set('category_id',categoryId);
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),20000);
+      let raw;
+      try{
+        const response=await fetch(endpoint,{redirect:'error',signal:controller.signal,headers:{Accept:'application/json'}});
+        if(!response.ok)throw Error('Provider status '+response.status);
+        const chunks=[];let bytes=0;
+        for await(const chunk of response.body){bytes+=chunk.length;if(bytes>20*1024*1024)throw Error('Provider response too large');chunks.push(chunk);}
+        raw=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      }finally{clearTimeout(timeout);}
+      if(!Array.isArray(raw))throw Error('Unexpected provider response');
+      const filtered=raw.filter(item=>String(item.category_id||'')===categoryId);
+      const items=filtered.slice(0,1200).map(item=>({
+        id:String(section==='series'?item.series_id||'':item.stream_id||''),
+        name:String(item.name||item.title||'Untitled').slice(0,160),
+        category_id:categoryId,
+        image:String(item.stream_icon||item.cover||'').slice(0,1500),
+        type:section
+      })).filter(item=>/^[0-9]{1,16}$/.test(item.id));
+      return send(res,200,{section,accountId,categoryId,items,total:filtered.length,limited:filtered.length>items.length});
+    }catch(error){console.error('Content listing failed:',error.name);return send(res,502,{error:'Provider content request failed'});}
+  }
+  if(req.method==='GET'&&url.pathname==='/api/device/catalog'){
 
     const d=session(req);
 
