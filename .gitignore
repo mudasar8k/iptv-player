@@ -56,3 +56,10 @@ Thumbs.db
 # VLC IPTV local backend data
 /server/data/
 /VLC-IPTV-central-admin-phase2.zip
+
+# VLC IPTV generated installers
+/installer/*.exe
+/builds/
+
+# Local development archives
+/VLC-IPTV-*.zip
