@@ -52,3 +52,7 @@ settings_place_in_electron_platform.json
 Thumbs.db
 .vscode/
 
+
+# VLC IPTV local backend data
+/server/data/
+/VLC-IPTV-central-admin-phase2.zip
