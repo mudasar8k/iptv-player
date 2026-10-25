@@ -1,0 +1,10 @@
+{
+  "id": "com.vlciptv.player",
+  "version": "0.1.0",
+  "vendor": "VLC IPTV Project",
+  "type": "web",
+  "main": "index.html",
+  "title": "VLC IPTV TV Preview",
+  "icon": "icon.png",
+  "resolution": "1920x1080"
+}
