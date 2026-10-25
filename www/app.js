@@ -24,6 +24,7 @@ app.on('ready', function () {
 
   mainWindow = new BrowserWindow({
     title: "VLC IPTV",
+    show: false,
     icon: iconPath,
     width: 1300,
     height: 900,
@@ -44,6 +45,31 @@ app.on('ready', function () {
     userAgent: 'IPTVSmartersPro'
   });
 
+  mainWindow.webContents.once('did-finish-load', function () {
+    var checks = 0;
+
+    var waitForDashboard = function () {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+
+      mainWindow.webContents.executeJavaScript(
+        "!!document.querySelector('#iptv-v4 .v4-cards .v4-card')",
+        false,
+        function (ready) {
+          if (!mainWindow || mainWindow.isDestroyed()) return;
+
+          if (ready) {
+            mainWindow.show();
+          } else if (++checks < 100) {
+            setTimeout(waitForDashboard, 100);
+          } else {
+            mainWindow.show();
+          }
+        }
+      );
+    };
+
+    waitForDashboard();
+  });
   // console.log(mainWindow.webContents.getUserAgent());
 
   // mainWindow.on('close', function (e) {
@@ -64,7 +90,7 @@ app.on('ready', function () {
 
   // createMenu(); 
 
-  mainWindow.openDevTools({ detach: false });
+  // Developer Tools disabled for production
 
 });
 
