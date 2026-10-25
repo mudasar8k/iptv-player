@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VLC IPTV — TV Preview</title>
 <link rel="stylesheet" href="css/tv.css">
+<link rel="stylesheet" href="css/pairing.css">
 </head>
 <body>
 <div id="app">
-  <header><div class="brand"><span class="brand-mark">V</span><span>VLC <strong>IPTV</strong></span><small>TV PREVIEW</small></div><span id="status">Remote-ready preview</span></header>
+  <header><div class="brand"><span class="brand-mark">V</span><span>VLC <strong>IPTV</strong></span><small>TV PREVIEW</small></div><span id="device-status">Pairing required</span></header>
   <main id="home" class="screen">
     <section class="hero"><p class="eyebrow">WELCOME TO YOUR ENTERTAINMENT</p><h1>Watch beautifully.</h1><p>TV-first design, built for LG Magic Remote and desktop browsers.</p></section>
     <nav class="tiles" aria-label="Main sections">
@@ -22,6 +23,12 @@
   <main id="section" class="screen hidden" aria-live="polite"><button class="back" id="back-section" type="button">← Home</button><p class="eyebrow">VLC IPTV</p><h1 id="section-title"></h1><p id="section-note">Next: connect the authorized IPTV data provider from your existing Windows app.</p><div class="empty">Content integration pending — no credentials are included in this starter.</div></main>
   <main id="player" class="screen hidden"><button class="back" id="back-player" type="button">← Back</button><h1>HTML5 playback test</h1><video id="video" controls playsinline></video><p id="player-error" role="status"></p></main>
 </div>
+<div id="pair-cover" role="dialog" aria-modal="true" aria-label="Pair this device">
+  <div class="pair-panel"><h2>Pair VLC IPTV</h2><p>Approve this browser from Central Admin</p>
+  <div id="pair-code" aria-live="polite">------</div><p id="pair-message" role="status"></p>
+  <button id="pair-retry" type="button">Generate new code</button></div>
+</div>
 <script src="js/tv.js"></script>
+<script src="js/pairing.js"></script>
 </body>
 </html>

@@ -1,0 +1,10 @@
+#pair-cover[hidden]{display:none!important}
+#pair-cover{position:fixed;inset:0;z-index:1000;background:rgba(8,7,16,.98);display:flex;align-items:center;justify-content:center;padding:5vw}
+#pair-cover .pair-panel{width:min(800px,94vw);text-align:center;background:#211331;border:1px solid #75529a;border-radius:24px;padding:5vw;box-shadow:0 10px 70px #0009}
+#pair-cover h2{font-size:clamp(30px,3.5vw,56px);margin:0 0 16px}
+#pair-code{font-size:clamp(58px,8vw,110px);font-weight:800;letter-spacing:.1em;color:#dcacff;margin:20px 0}
+#pair-message{color:#cbbbd8;font-size:clamp(17px,1.7vw,25px);line-height:1.55;min-height:100px}
+#pair-retry{border:2px solid #c585f6;background:#5f2593;color:white;padding:16px 24px;border-radius:10px;font:inherit;cursor:pointer}
+#pair-retry:focus,#pair-retry:hover{outline:4px solid #e9bbff;outline-offset:4px}
+button.tile:disabled{opacity:.35;cursor:not-allowed}
+#device-status{font-size:13px;color:#cdb6e2;max-width:50%;text-align:right}
