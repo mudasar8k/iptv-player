@@ -1,0 +1,147 @@
+(function () {
+  'use strict';
+
+  var pageSize = 80;
+  var state = {items:[], shown:0, section:'', accountId:''};
+
+  var container = document.createElement('div');
+  container.id = 'vlc-catalog';
+  document.getElementById('section').appendChild(container);
+
+  function element(tag, text, className) {
+    var el = document.createElement(tag);
+    if (text !== undefined) el.textContent = text;
+    if (className) el.className = className;
+    return el;
+  }
+
+  function message(text) {
+    container.replaceChildren(element('p',text,'catalog-message'));
+  }
+
+  function showMore() {
+    var grid = document.getElementById('vlc-category-grid');
+    if (!grid) return;
+
+    var end = Math.min(state.shown + pageSize, state.items.length);
+
+    for (var i=state.shown; i<end; i++) {
+      (function (category) {
+        var button = element(
+          'button',
+          category.category_name || 'Unnamed category',
+          'catalog-card'
+        );
+        button.type = 'button';
+        button.addEventListener('click',function () {
+          var detail = document.getElementById('catalog-selected');
+          if (detail) {
+            detail.textContent =
+              'Selected: ' + category.category_name +
+              ' — Content listing will be connected next.';
+          }
+        });
+        grid.appendChild(button);
+      }(state.items[i]));
+    }
+
+    state.shown = end;
+
+    var old = document.getElementById('catalog-more');
+    if (old) old.remove();
+
+    if (state.shown < state.items.length) {
+      var more = element('button','Show more categories','catalog-more');
+      more.id = 'catalog-more';
+      more.addEventListener('click',function () {
+        showMore();
+        more.focus();
+      });
+      container.appendChild(more);
+    }
+  }
+
+  function render(categories) {
+    container.replaceChildren();
+
+    container.appendChild(element(
+      'p',
+      categories.length + ' categories available',
+      'catalog-count'
+    ));
+
+    var grid = element('div',undefined,'catalog-grid');
+    grid.id = 'vlc-category-grid';
+    container.appendChild(grid);
+
+    container.appendChild(
+      element('p','Select a category to continue.','catalog-selected')
+    );
+    container.lastChild.id = 'catalog-selected';
+
+    state.items = categories;
+    state.shown = 0;
+    showMore();
+
+    var first = grid.querySelector('button');
+    if (first) first.focus();
+  }
+
+  window.VLCLoadCategories = async function (section) {
+    if (!['live','movies','series'].includes(section)) return;
+
+    state.section = section;
+    message('Loading ' + section + ' categories...');
+
+    try {
+      var token = localStorage.getItem('vlc_device_token_v1');
+
+      if (!token) {
+        throw Error('Device not paired');
+      }
+
+      var headers = {Authorization:'Bearer ' + token};
+
+      var meResponse = await fetch('/api/device/me',{headers:headers});
+
+      if (!meResponse.ok) {
+        throw Error('Device authorization failed');
+      }
+
+      var me = await meResponse.json();
+
+      if (!me.accounts || !me.accounts.length) {
+        throw Error('No subscription assigned');
+      }
+
+      if (me.device.permissions[section] !== true) {
+        throw Error('This content type is disabled');
+      }
+
+      var account = me.accounts[0];
+
+      var query = new URLSearchParams({
+        section:section,
+        accountId:account.id
+      });
+
+      var response = await fetch(
+        '/api/device/catalog?' + query.toString(),
+        {headers:headers}
+      );
+
+      var result = await response.json();
+
+      if (!response.ok) {
+        throw Error(result.error || 'Categories request failed');
+      }
+
+      if (state.section !== section) return;
+
+      render(result.categories || []);
+
+    } catch (error) {
+      message(error.message);
+    }
+  };
+}());

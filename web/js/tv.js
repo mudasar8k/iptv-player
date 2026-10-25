@@ -28,7 +28,7 @@
     if (!names[name]) return;
     lastHomeFocus = document.activeElement;
     document.getElementById('section-title').textContent = names[name];
-    screen('section');
+    screen('section'); if (window.VLCLoadCategories) window.VLCLoadCategories(name);
   }
   function goBack() {
     if (current === 'player') { video.pause(); video.removeAttribute('src'); video.load(); screen(previous); return; }

@@ -226,7 +226,7 @@ const server=http.createServer((req,res)=>{
  (async()=>{
   const url=new URL(req.url,'http://localhost');
   if(url.pathname.startsWith('/api/'))return api(req,res,url);
-  const routes={'/admin':'web/admin/index.html','/admin/':'web/admin/index.html','/':'web/index.html','/index.html':'web/index.html','/css/tv.css':'web/css/tv.css','/js/tv.js':'web/js/tv.js','/js/pairing.js':'web/js/pairing.js','/css/pairing.css':'web/css/pairing.css','/icon.png':'web/icon.png'};
+  const routes={'/admin':'web/admin/index.html','/admin/':'web/admin/index.html','/':'web/index.html','/index.html':'web/index.html','/css/tv.css':'web/css/tv.css','/js/tv.js':'web/js/tv.js','/js/pairing.js':'web/js/pairing.js','/css/pairing.css':'web/css/pairing.css','/js/catalog.js':'web/js/catalog.js','/css/catalog.css':'web/css/catalog.css','/icon.png':'web/icon.png'};
   let file=routes[url.pathname];if(!file)return send(res,404,{error:'Not found'});
   // Prototype is localhost-only; reject use through a reverse proxy until hardened.
   if(!isLocal(req))return send(res,403,{error:'Local-only prototype'});

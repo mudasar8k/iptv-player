@@ -1,0 +1,44 @@
+#vlc-catalog {
+  margin: 24px 0 40px;
+  color: #fff;
+}
+.catalog-count {
+  color: #cfa4ef;
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 16px;
+}
+.catalog-card, .catalog-more {
+  background: linear-gradient(145deg,#39154d,#190c28);
+  color: white;
+  border: 1px solid #74438e;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 90px;
+  font-size: 19px;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.catalog-card:hover,
+.catalog-card:focus,
+.catalog-more:focus {
+  outline: 3px solid #dc9fff;
+  outline-offset: 3px;
+  background: #512170;
+}
+.catalog-message, .catalog-selected {
+  font-size: 20px;
+  color: #d8b3ef;
+  padding: 12px 0;
+}
+.catalog-more {
+  margin-top: 25px;
+}
+@media(max-width:900px) {
+  .catalog-grid {grid-template-columns:repeat(2,minmax(0,1fr));}
+}
