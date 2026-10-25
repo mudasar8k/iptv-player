@@ -27,6 +27,94 @@ function auth(req){return equal((req.headers.authorization||'').replace(/^Bearer
 function session(req){const token=(req.headers.authorization||'').replace(/^Bearer /i,'');return db.devices.find(d=>equal(d.tokenHash, crypto.createHash('sha256').update(token).digest('hex')));}
 function cleanHost(input){const url=new URL(input);if(!['http:','https:'].includes(url.protocol)||url.username||url.password||url.search||url.hash)throw Error('Enter a plain http(s) server URL without credentials or query');return url.origin+url.pathname.replace(/\/$/,'');}
 function isLocal(req){return ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);}
+function decryptSecret(secret) {
+  const decipher = crypto.createDecipheriv(
+    'aes-256-gcm',
+    encKey,
+    Buffer.from(secret.iv, 'base64')
+  );
+
+  decipher.setAuthTag(
+    Buffer.from(secret.tag, 'base64')
+  );
+
+  return Buffer.concat([
+    decipher.update(
+      Buffer.from(secret.data, 'base64')
+    ),
+    decipher.final()
+  ]).toString('utf8');
+}
+
+async function xtreamCategories(account, action) {
+  const endpoint = new URL(
+    account.host.replace(/\/+$/, '') + '/player_api.php'
+  );
+
+  endpoint.searchParams.set(
+    'username',
+    account.username
+  );
+
+  endpoint.searchParams.set(
+    'password',
+    decryptSecret(account.secret)
+  );
+
+  endpoint.searchParams.set('action', action);
+
+  const controller = new AbortController();
+
+  const timer = setTimeout(
+    () => controller.abort(),
+    12000
+  );
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      redirect: 'error',
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw Error('Provider request failed');
+    }
+
+    const chunks = [];
+    let size = 0;
+    const maxBytes = 2 * 1024 * 1024;
+
+    for await (const chunk of response.body) {
+      size += chunk.length;
+
+      if (size > maxBytes) {
+        throw Error('Provider response too large');
+      }
+
+      chunks.push(chunk);
+    }
+
+    const result = JSON.parse(
+      Buffer.concat(chunks).toString('utf8')
+    );
+
+    if (!Array.isArray(result)) {
+      throw Error('Unexpected provider response');
+    }
+
+    return result.slice(0, 3000).map(item => ({
+      category_id: String(item.category_id || ''),
+      category_name: String(item.category_name || '')
+    }));
+
+  } finally {
+    clearTimeout(timer);
+  }
+}
 async function api(req,res,url){
  if(req.method==='POST'&&url.pathname==='/api/pair/start'){
   const b=await body(req); const name=String(b.name||'New device').slice(0,70), platform=String(b.platform||'browser').slice(0,30);
@@ -42,7 +130,77 @@ async function api(req,res,url){
  if(req.method==='GET'&&url.pathname==='/api/device/me'){
   const d=session(req);if(!d)return send(res,401,{error:'Device not authorized'});d.lastSeen=new Date().toISOString();save();return send(res,200,{device:safeDevice(d),accounts:d.accounts.map(id=>db.accounts.find(a=>a.id===id)).filter(Boolean).map(safeAccount)});
  }
- if(!url.pathname.startsWith('/api/admin/'))return send(res,404,{error:'Not found'});
+   if(req.method==='GET'&&url.pathname==='/api/device/catalog'){
+
+    const d=session(req);
+
+    if(!d){
+      return send(res,401,{
+        error:'Device not authorized'
+      });
+    }
+
+    const accountId=url.searchParams.get('accountId');
+    const section=url.searchParams.get('section');
+
+    const actions={
+      live:'get_live_categories',
+      movies:'get_vod_categories',
+      series:'get_series_categories'
+    };
+
+    if(!Object.prototype.hasOwnProperty.call(actions,section)){
+      return send(res,400,{
+        error:'Invalid content section'
+      });
+    }
+
+    if(d.permissions[section]!==true){
+      return send(res,403,{
+        error:'Content access disabled'
+      });
+    }
+
+    if(!d.accounts.includes(accountId)){
+      return send(res,403,{
+        error:'Account not assigned'
+      });
+    }
+
+    const account=db.accounts.find(
+      a=>a.id===accountId
+    );
+
+    if(!account){
+      return send(res,404,{
+        error:'Account unavailable'
+      });
+    }
+
+    try {
+      const categories=await xtreamCategories(
+        account,
+        actions[section]
+      );
+
+      return send(res,200,{
+        section,
+        accountId,
+        categories
+      });
+
+    } catch(error) {
+      console.error(
+        'Xtream categories request failed:',
+        error.name
+      );
+
+      return send(res,502,{
+        error:'Could not retrieve categories from provider'
+      });
+    }
+  }
+if(!url.pathname.startsWith('/api/admin/'))return send(res,404,{error:'Not found'});
  if(!auth(req))return send(res,401,{error:'Admin authorization required'});
  if(req.method==='GET'&&url.pathname==='/api/admin/state')return send(res,200,{accounts:db.accounts.map(safeAccount),devices:db.devices.map(safeDevice),pending:db.pending.filter(p=>p.expires>Date.now()).map(p=>({code:p.code,name:p.name,platform:p.platform,expires:p.expires}))});
  if(req.method==='POST'&&url.pathname==='/api/admin/accounts'){
