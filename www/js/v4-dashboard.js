@@ -22,5 +22,30 @@
   }
   function clean(){if(lastHome&&lastHome.getAttribute('data-v4-hidden')==='1'){lastHome.style.opacity='';lastHome.removeAttribute('data-v4-hidden');}if(root&&root.parentNode)root.parentNode.removeChild(root);root=null;lastHome=null;if(clockTimer)clearInterval(clockTimer);clockTimer=null;}
   function tick(){var mc=get('mainContent');var first=get('homeLiveTile');var isHome=!!(mc&&mc.offsetWidth&&mc.offsetHeight&&first&&mc.contains(first)&&get('moviesTile')&&get('seriesTile'));if(!isHome){if(root)clean();return;}var home=mc.firstElementChild;if(!root||lastHome!==home){if(root)clean();build(home);}else sync();}
-  setInterval(tick,250);
+  var vlcNavigationObserver = new MutationObserver(function () {
+    tick();
+});
+
+vlcNavigationObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true
+});
+
+// Observe visibility changes within the original home container.
+var vlcHomeElement = get('mainContent');
+if (vlcHomeElement) {
+    var vlcVisibilityObserver = new MutationObserver(function () {
+        tick();
+    });
+    vlcVisibilityObserver.observe(vlcHomeElement, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        childList: true,
+        subtree: true
+    });
+}
+
+// Retain the original periodic check as a fallback.
+setInterval(tick,250);
+tick();
 })();
