@@ -1393,60 +1393,7 @@
       }
     });
 
-    function updateQualityBadges() {
-      var badgesWrap = document.getElementById('player-quality-badges');
-      if (!badgesWrap) return;
-      badgesWrap.innerHTML = '';
-
-      var vw = video.videoWidth || 0;
-      var vh = video.videoHeight || 0;
-      var name = (currentPlayback && currentPlayback.name) || '';
-
-      var badges = [];
-
-      // 1. Video Resolution Detection
-      if (vw >= 3800 || vh >= 2100 || /\b(4k|uhd|2160p)\b/i.test(name)) {
-        badges.push('4K UHD');
-      } else if (vw >= 1900 || vh >= 1000 || /\b(1080p|fhd)\b/i.test(name)) {
-        badges.push('FHD 1080p');
-      } else if (vw >= 1200 || vh >= 700 || /\b(720p|hd)\b/i.test(name)) {
-        badges.push('HD 720p');
-      } else if (vw > 0 || vh > 0) {
-        badges.push('SD');
-      }
-
-      // 2. High Dynamic Range (HDR) Detection from stream title / tags
-      if (/\b(hdr10\+|hdr10|hdr)\b/i.test(name)) {
-        badges.push('HDR10');
-      } else if (/\b(dv|dovi|dolby\s*vision)\b/i.test(name)) {
-        badges.push('Dolby Vision');
-      }
-
-      // 3. Audio Codec Detection
-      if (currentPlayback && currentPlayback.isCompat) {
-        badges.push('AAC 2.0 (Stereo)');
-      } else if (/\b(atmos|dolby\s*atmos)\b/i.test(name)) {
-        badges.push('Dolby Atmos');
-      } else if (/\b(ddp|eac3|dolby\s*digital\s*plus|5\.1)\b/i.test(name)) {
-        badges.push('Dolby 5.1');
-      } else if (/\b(dts(-hd)?)\b/i.test(name)) {
-        badges.push('DTS');
-      } else if (badges.length > 0) {
-        badges.push('Stereo');
-      }
-
-      badges.forEach(function (b) {
-        var span = document.createElement('span');
-        span.className = 'player-badge';
-        span.textContent = b;
-        badgesWrap.appendChild(span);
-      });
-    }
-
-    video.addEventListener('loadedmetadata', updateQualityBadges);
-
     video.addEventListener('playing', function () {
-      updateQualityBadges();
       var errEl = document.getElementById('player-error');
       if (errEl) errEl.textContent = '';
       if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'none';
