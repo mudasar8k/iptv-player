@@ -107,35 +107,58 @@
   var backSection = document.getElementById('back-section');
   var backPlayer  = document.getElementById('back-player');
 
+  function stopCurrentPlayback() {
+    if (currentPlayback && video && video.currentTime > 10) {
+      recordProgress(currentPlayback, video.currentTime, video.duration);
+    }
+    hideResumePrompt();
+    if (window._currentHls) {
+      window._currentHls.destroy();
+      window._currentHls = null;
+    }
+    if (video) {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    }
+    var titleEl = document.getElementById('player-title');
+    if (titleEl) titleEl.textContent = '';
+    var errEl = document.getElementById('player-error');
+    if (errEl) errEl.textContent = '';
+    var audioBtn = document.getElementById('player-audio-btn');
+    if (audioBtn) audioBtn.style.display = 'none';
+    currentPlayback = null;
+    showScreen(previous || 'home');
+    loadContinueWatchingRow();
+  }
+
   function goBack() {
     if (current === 'player') {
-      // If PiP is active, user clicking Back wants to navigate back to previous screen
-      // while KEEPING Picture-in-Picture running!
+      // If PiP is already active, simply navigate to the previous screen while keeping PiP running!
       if (isPipActive()) {
         showScreen(previous || 'home');
         return;
       }
 
-      if (currentPlayback && video && video.currentTime > 10) {
-        recordProgress(currentPlayback, video.currentTime, video.duration);
+      // If video is currently actively playing and browser supports Picture-in-Picture,
+      // seamlessly convert video into floating PiP mode and navigate back to previous screen!
+      if (video && !video.paused && !video.ended && video.requestPictureInPicture) {
+        if (currentPlayback && video.currentTime > 10) {
+          recordProgress(currentPlayback, video.currentTime, video.duration);
+        }
+        hideResumePrompt();
+        // Request PiP immediately while within user gesture
+        video.requestPictureInPicture().catch(function (err) {
+          console.warn('[PiP] auto-pip failed, proceeding to stop playback:', err);
+          stopCurrentPlayback();
+        });
+        showScreen(previous || 'home');
+        loadContinueWatchingRow();
+        return;
       }
-      hideResumePrompt();
-      if (window._currentHls) {
-        window._currentHls.destroy();
-        window._currentHls = null;
-      }
-      video.pause();
-      video.removeAttribute('src');
-      video.load();
-      var titleEl = document.getElementById('player-title');
-      if (titleEl) titleEl.textContent = '';
-      var errEl = document.getElementById('player-error');
-      if (errEl) errEl.textContent = '';
-      var audioBtn = document.getElementById('player-audio-btn');
-      if (audioBtn) audioBtn.style.display = 'none';
-      currentPlayback = null;
-      showScreen(previous);
-      loadContinueWatchingRow();
+
+      // Otherwise (video was paused by user, ended, or PiP not supported), stop playback cleanly
+      stopCurrentPlayback();
       return;
     }
     if (current === 'section') {
