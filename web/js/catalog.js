@@ -193,6 +193,18 @@
     }catch(e){message(e.message);var back=element('button','Back to categories','catalog-more');back.addEventListener('click',function(){window.VLCCatalogBack();});container.appendChild(back);back.focus();}
   }
   window.VLCLoadCategories = async function (section) {
+    if (section === 'favorites') {
+      clearSelection();
+      state.section = 'favorites';
+      var favs = window.VLCFavoritesList || [];
+      if (!favs.length) {
+        container.replaceChildren(element('p', 'No favorites saved yet. Add favorites using the ⭐ button while playing.', 'catalog-message'));
+        return;
+      }
+      renderFavoritesGrid(favs);
+      return;
+    }
+
     if (!['live','movies','series'].includes(section)) return;
 
     clearSelection();

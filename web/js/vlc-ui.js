@@ -152,25 +152,53 @@
   function focusNearest(key) {
     var area = screens[current];
     if (!area) return;
-    var els = area.querySelectorAll('button:not([disabled]), input:not([disabled])');
+
+    var sidebar = document.getElementById('vlc-sidebar');
+    var isInsideSidebar = sidebar && sidebar.contains(document.activeElement);
+
+    // If on sidebar and pressing Right, focus first item in content area
+    if (isInsideSidebar && key === 39) {
+      var contentBtn = area.querySelector('button:not([disabled]), input:not([disabled])');
+      if (contentBtn) { contentBtn.focus(); contentBtn.scrollIntoView({ block: 'nearest' }); return; }
+    }
+
+    // Collect candidates
+    var els = Array.from(area.querySelectorAll('button:not([disabled]), input:not([disabled])'));
+    if (sidebar) {
+      var sideBtns = Array.from(sidebar.querySelectorAll('button:not([disabled])'));
+      els = els.concat(sideBtns);
+    }
+
     var active = document.activeElement;
-    if (!active || !active.getBoundingClientRect) { if (els[0]) els[0].focus(); return; }
+    if (!active || !active.getBoundingClientRect) {
+      if (els[0]) els[0].focus();
+      return;
+    }
+
     var src = active.getBoundingClientRect();
     var sx = src.left + src.width / 2, sy = src.top + src.height / 2;
     var best = null, score = Infinity;
+
     for (var i = 0; i < els.length; i++) {
       if (els[i] === active) continue;
       var r = els[i].getBoundingClientRect();
       var dx = r.left + r.width / 2 - sx;
       var dy = r.top + r.height / 2 - sy;
+
       if ((key === 37 && dx >= -4) || (key === 39 && dx <= 4) ||
           (key === 38 && dy >= -4) || (key === 40 && dy <= 4)) continue;
+
       var d = (key === 37 || key === 39)
-        ? Math.abs(dx) + Math.abs(dy) * 2
-        : Math.abs(dy) + Math.abs(dx) * 2;
+        ? Math.abs(dx) + Math.abs(dy) * 1.8
+        : Math.abs(dy) + Math.abs(dx) * 1.8;
+
       if (d < score) { score = d; best = els[i]; }
     }
-    if (best) { best.focus(); best.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+
+    if (best) {
+      best.focus();
+      best.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
   }
 
   /* ═══════════════════════════════════════════════════════
@@ -676,6 +704,36 @@
       var card = makePosterCard(item, item.section, item.accountId);
       strip.appendChild(card);
     });
+
+    // Dynamically update Hero Spotlight with most recently watched title
+    var latest = list[0];
+    if (latest) {
+      var heroTitle = document.getElementById('hero-title');
+      var heroDesc = document.getElementById('hero-desc');
+      var heroBadge = document.getElementById('hero-badge');
+      var heroPlayLabel = document.getElementById('hero-play-label');
+      var heroPlay = document.getElementById('hero-play');
+
+      if (heroTitle) heroTitle.textContent = latest.name || 'Your Entertainment Hub';
+      if (heroDesc) heroDesc.textContent = 'Continue watching from ' + formatTime(latest.position) + ' where you left off.';
+      if (heroBadge) heroBadge.textContent = 'CONTINUE WATCHING';
+      if (heroPlayLabel) heroPlayLabel.textContent = 'Resume Playing';
+      if (heroPlay) {
+        heroPlay.onclick = function (e) {
+          e.stopPropagation();
+          window.VLCPlayItem(latest.section, latest.accountId, latest.itemId, latest.name, latest.seriesId, latest.image);
+        };
+      }
+
+      if (latest.image) {
+        var heroBg = document.getElementById('hero-bg');
+        if (heroBg) {
+          heroBg.style.backgroundImage = 'radial-gradient(ellipse at 70% 40%, rgba(120,50,200,.6) 0%, transparent 60%), linear-gradient(90deg, rgba(7,6,15,0.95) 0%, rgba(7,6,15,0.65) 50%, transparent 100%), url("' + latest.image + '")';
+          heroBg.style.backgroundSize = 'cover';
+          heroBg.style.backgroundPosition = 'center 20%';
+        }
+      }
+    }
   }
 
   async function loadFavoritesRow() {
