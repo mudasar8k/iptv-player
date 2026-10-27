@@ -688,12 +688,82 @@
     });
   }
 
+  /* ═══════════════════════════════════════════════════════
+     PICTURE IN PICTURE & MEDIA SESSION (TIMELINE IN PIP)
+  ═══════════════════════════════════════════════════════ */
+  function updateMediaSessionPosition() {
+    if (!('mediaSession' in navigator) || !video) return;
+    try {
+      var cur = (currentPlayback && currentPlayback.isCompat)
+        ? (currentPlayback.compatOffset || 0) + (video.currentTime || 0)
+        : (video.currentTime || 0);
+
+      var dur = (currentPlayback && currentPlayback.duration)
+        ? currentPlayback.duration
+        : (video.duration && isFinite(video.duration) ? video.duration : 0);
+
+      if (dur > 0 && cur >= 0 && cur <= dur) {
+        navigator.mediaSession.setPositionState({
+          duration: dur,
+          playbackRate: video.playbackRate || 1.0,
+          position: Math.min(cur, dur)
+        });
+      }
+    } catch (_) {}
+  }
+
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.setActionHandler('play', function () {
+        if (video) video.play().catch(function () {});
+      });
+      navigator.mediaSession.setActionHandler('pause', function () {
+        if (video) video.pause();
+      });
+      navigator.mediaSession.setActionHandler('seekto', function (details) {
+        if (details && typeof details.seekTime === 'number') {
+          seekToTime(details.seekTime);
+          updateMediaSessionPosition();
+        }
+      });
+      navigator.mediaSession.setActionHandler('seekbackward', function (details) {
+        var skip = (details && details.seekOffset) || 10;
+        var cur = (currentPlayback && currentPlayback.isCompat)
+          ? (currentPlayback.compatOffset || 0) + (video.currentTime || 0)
+          : (video.currentTime || 0);
+        seekToTime(cur - skip);
+        updateMediaSessionPosition();
+      });
+      navigator.mediaSession.setActionHandler('seekforward', function (details) {
+        var skip = (details && details.seekOffset) || 10;
+        var cur = (currentPlayback && currentPlayback.isCompat)
+          ? (currentPlayback.compatOffset || 0) + (video.currentTime || 0)
+          : (video.currentTime || 0);
+        seekToTime(cur + skip);
+        updateMediaSessionPosition();
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', function () {
+        if (ctrlPrevEp && ctrlPrevEp.style.display !== 'none' && !ctrlPrevEp.disabled) {
+          ctrlPrevEp.click();
+        }
+      });
+      navigator.mediaSession.setActionHandler('nexttrack', function () {
+        if (ctrlNextEp && ctrlNextEp.style.display !== 'none' && !ctrlNextEp.disabled) {
+          ctrlNextEp.click();
+        }
+      });
+    } catch (_) {}
+  }
+  setupMediaSession();
+
   if (video) {
     video.addEventListener('enterpictureinpicture', function () {
       if (playerScreen && current !== 'player') {
         playerScreen.classList.add('pip-background');
         playerScreen.classList.remove('hidden');
       }
+      updateMediaSessionPosition();
     });
 
     video.addEventListener('leavepictureinpicture', function () {
@@ -932,6 +1002,10 @@
       var pct = dur > 0 ? (cur / dur) * 100 : 0;
       if (scrubFill) scrubFill.style.width = Math.min(100, Math.max(0, pct)) + '%';
       if (scrubThumb) scrubThumb.style.left = Math.min(100, Math.max(0, pct)) + '%';
+
+      if (isPipActive()) {
+        updateMediaSessionPosition();
+      }
     });
 
     video.addEventListener('progress', function () {
@@ -950,6 +1024,7 @@
       if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'none';
       if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'block';
       resetHudTimer();
+      updateMediaSessionPosition();
     });
 
     video.addEventListener('pause', function () {
@@ -999,6 +1074,21 @@
         image: image || '',
         episodeMeta: episodeMeta || null
       };
+
+      if ('mediaSession' in navigator && window.MediaMetadata) {
+        try {
+          var artworkList = [];
+          if (image && /^https?:\/\//i.test(image)) {
+            artworkList.push({ src: image, sizes: '512x512', type: 'image/jpeg' });
+          }
+          navigator.mediaSession.metadata = new window.MediaMetadata({
+            title: name || 'Video',
+            artist: (section === 'series' && window.VLCSeriesContext ? window.VLCSeriesContext.seriesName : 'VLC IPTV'),
+            album: (section === 'series' ? 'Series' : 'Movies'),
+            artwork: artworkList
+          });
+        } catch (_) {}
+      }
 
       hideResumePrompt();
       if (typeof updateEpisodesUi === 'function') {

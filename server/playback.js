@@ -15,7 +15,14 @@ function createPath(account,section,id,decrypt,movieExtension){
   const ext=section==='live'?'m3u8':movieExtension;
   return new URL(base+'/'+(section==='live'?'live':section==='series'?'series':'movie')+'/'+user+'/'+pwd+'/'+id+'.'+ext);
 }
+const extCache = new Map();
 async function getMovieExtension(account,id,decrypt) {
+  const cacheKey = account.id + ':' + String(id);
+  const cached = extCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.ext;
+  }
+
   const endpoint=new URL(
     account.host.replace(/\/+$/,'')+'/player_api.php'
   );
@@ -25,7 +32,7 @@ async function getMovieExtension(account,id,decrypt) {
   endpoint.searchParams.set('vod_id',String(id));
 
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),12000);
+  const timer=setTimeout(()=>controller.abort(),8000);
 
   try {
     const response=await fetch(endpoint,{
@@ -47,14 +54,15 @@ async function getMovieExtension(account,id,decrypt) {
     const extension=String(
       (data.movie_data && data.movie_data.container_extension) ||
       (data.info && data.info.container_extension) ||
-      ''
+      'mp4'
     ).toLowerCase().replace(/^\./,'');
 
-    if(!['mp4','mkv','avi','mov','webm'].includes(extension)){
-      throw Error('Unsupported or missing provider container extension');
-    }
-
-    return extension;
+    const safeExt = ['mp4','mkv','avi','mov','webm'].includes(extension) ? extension : 'mp4';
+    extCache.set(cacheKey, { ext: safeExt, expires: Date.now() + 24 * 3600 * 1000 });
+    return safeExt;
+  } catch(_) {
+    // If provider API is slow or times out, default to standard mp4 for instant startup
+    return 'mp4';
   } finally {
     clearTimeout(timer);
   }
