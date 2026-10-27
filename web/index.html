@@ -246,6 +246,13 @@
             <button type="button" id="ctrl-forward" class="player-ctrl-btn" title="Fast Forward 10 seconds (→ Right)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><text x="12" y="16" font-size="8" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">10</text></svg>
             </button>
+            <!-- Episode Previous / Next Navigation -->
+            <button type="button" id="ctrl-prev-ep" class="player-ctrl-btn" title="Previous Episode" style="display:none">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2.5"/></svg>
+            </button>
+            <button type="button" id="ctrl-next-ep" class="player-ctrl-btn" title="Next Episode" style="display:none">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2.5"/></svg>
+            </button>
 
             <!-- Inline Time Readout like Screenshots -->
             <div class="player-time-inline">
@@ -264,6 +271,11 @@
               </button>
               <input type="range" id="vol-slider" class="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume">
             </div>
+
+            <!-- Episodes Quick Sheet Button (For Series) -->
+            <button type="button" id="ctrl-episodes" class="player-ctrl-btn" title="Episodes" style="display:none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
 
             <!-- Fullscreen Button -->
             <button type="button" id="ctrl-fullscreen" class="player-ctrl-btn" title="Toggle Fullscreen">
@@ -299,6 +311,21 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Quick Episodes Side Drawer (Select Specific Episode while playing) -->
+      <div id="player-episodes-drawer" class="player-episodes-drawer" style="display:none">
+        <div class="episodes-drawer-header">
+          <div class="episodes-drawer-title-wrap">
+            <h3 class="episodes-drawer-title">Episodes</h3>
+            <p id="drawer-series-name" class="episodes-drawer-sub"></p>
+          </div>
+          <button type="button" id="drawer-close-btn" class="drawer-close-btn" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div id="drawer-seasons-wrap" class="drawer-seasons-pills"></div>
+        <div id="drawer-episodes-list" class="drawer-episodes-list"></div>
       </div>
 
       <p id="player-error" class="player-error" role="status"></p>

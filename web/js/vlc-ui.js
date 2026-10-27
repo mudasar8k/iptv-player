@@ -640,6 +640,190 @@
     });
   }
 
+  /* ═══════════════════════════════════════════════════════
+     EPISODE NAVIGATION & QUICK EPISODES DRAWER
+  ═══════════════════════════════════════════════════════ */
+  var ctrlPrevEp = document.getElementById('ctrl-prev-ep');
+  var ctrlNextEp = document.getElementById('ctrl-next-ep');
+  var ctrlEpisodes = document.getElementById('ctrl-episodes');
+  var episodesDrawer = document.getElementById('player-episodes-drawer');
+  var drawerCloseBtn = document.getElementById('drawer-close-btn');
+  var drawerSeriesName = document.getElementById('drawer-series-name');
+  var drawerSeasonsWrap = document.getElementById('drawer-seasons-wrap');
+  var drawerEpisodesList = document.getElementById('drawer-episodes-list');
+
+  function getEpisodeList() {
+    if (!window.VLCSeriesContext || !window.VLCSeriesContext.seasonEpisodes) return [];
+    return window.VLCSeriesContext.seasonEpisodes;
+  }
+
+  function getCurrentEpisodeIndex() {
+    if (!currentPlayback || currentPlayback.section !== 'series') return -1;
+    var list = getEpisodeList();
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].id) === String(currentPlayback.itemId)) return i;
+    }
+    return -1;
+  }
+
+  function playAdjacentEpisode(delta) {
+    var list = getEpisodeList();
+    if (!list.length || !currentPlayback) return;
+    var idx = getCurrentEpisodeIndex();
+    var nextIdx = idx + delta;
+    if (nextIdx >= 0 && nextIdx < list.length) {
+      var nextEp = list[nextIdx];
+      var seriesCtx = window.VLCSeriesContext;
+      var label = (seriesCtx.seriesName ? seriesCtx.seriesName + ' - ' : '') + (nextEp.title || ('Episode ' + nextEp.episode));
+      window.VLCPlayItem('series', seriesCtx.accountId, nextEp.id, label, seriesCtx.seriesId, seriesCtx.cover, nextEp);
+    }
+  }
+
+  if (ctrlPrevEp) {
+    ctrlPrevEp.addEventListener('click', function () {
+      playAdjacentEpisode(-1);
+    });
+  }
+
+  if (ctrlNextEp) {
+    ctrlNextEp.addEventListener('click', function () {
+      playAdjacentEpisode(1);
+    });
+  }
+
+  function closeEpisodesDrawer() {
+    if (episodesDrawer) episodesDrawer.style.display = 'none';
+  }
+
+  if (drawerCloseBtn) {
+    drawerCloseBtn.addEventListener('click', closeEpisodesDrawer);
+  }
+
+  function renderDrawerEpisodes(seasonNum) {
+    if (!window.VLCSeriesContext || !drawerEpisodesList) return;
+    drawerEpisodesList.replaceChildren();
+
+    var allEps = window.VLCSeriesContext.allEpisodes || [];
+    var list = allEps
+      .filter(function (e) { return e.season === seasonNum; })
+      .sort(function (a, b) { return a.episode - b.episode; });
+
+    list.forEach(function (ep) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      var isCurrent = currentPlayback && String(currentPlayback.itemId) === String(ep.id);
+      btn.className = 'drawer-ep-item' + (isCurrent ? ' drawer-ep-item--playing' : '');
+
+      var left = document.createElement('div');
+      left.className = 'drawer-ep-left';
+
+      var badge = document.createElement('span');
+      badge.className = 'drawer-ep-badge';
+      badge.textContent = 'EP ' + ep.episode;
+      left.appendChild(badge);
+
+      var title = document.createElement('span');
+      title.className = 'drawer-ep-name';
+      title.textContent = ep.title || ('Episode ' + ep.episode);
+      left.appendChild(title);
+
+      btn.appendChild(left);
+
+      if (isCurrent) {
+        var playingIcon = document.createElement('span');
+        playingIcon.className = 'drawer-ep-playing-icon';
+        playingIcon.textContent = '▶ Playing';
+        btn.appendChild(playingIcon);
+      } else if (ep.duration) {
+        var dur = document.createElement('span');
+        dur.className = 'ep-duration';
+        dur.textContent = ep.duration;
+        btn.appendChild(dur);
+      }
+
+      btn.addEventListener('click', function () {
+        var seriesCtx = window.VLCSeriesContext;
+        var label = (seriesCtx.seriesName ? seriesCtx.seriesName + ' - ' : '') + (ep.title || ('Episode ' + ep.episode));
+        closeEpisodesDrawer();
+        window.VLCPlayItem('series', seriesCtx.accountId, ep.id, label, seriesCtx.seriesId, seriesCtx.cover, ep);
+      });
+
+      drawerEpisodesList.appendChild(btn);
+    });
+  }
+
+  function openEpisodesDrawer() {
+    if (!window.VLCSeriesContext || !episodesDrawer) return;
+    var ctx = window.VLCSeriesContext;
+    if (drawerSeriesName) drawerSeriesName.textContent = ctx.seriesName || 'Series Episodes';
+
+    // Render seasons pills
+    if (drawerSeasonsWrap) {
+      drawerSeasonsWrap.replaceChildren();
+      var seasons = ctx.seasons || [1];
+      var activeSeason = ctx.currentSeason || seasons[0];
+
+      seasons.forEach(function (s) {
+        var pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'drawer-season-pill' + (s === activeSeason ? ' drawer-season-pill--active' : '');
+        pill.textContent = 'Season ' + s;
+        pill.addEventListener('click', function () {
+          drawerSeasonsWrap.querySelectorAll('.drawer-season-pill').forEach(function (p) {
+            p.classList.remove('drawer-season-pill--active');
+          });
+          pill.classList.add('drawer-season-pill--active');
+          ctx.currentSeason = s;
+          renderDrawerEpisodes(s);
+        });
+        drawerSeasonsWrap.appendChild(pill);
+      });
+    }
+
+    renderDrawerEpisodes(ctx.currentSeason || 1);
+    episodesDrawer.style.display = 'flex';
+    showHud();
+  }
+
+  if (ctrlEpisodes) {
+    ctrlEpisodes.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isHidden = episodesDrawer.style.display === 'none';
+      if (isHidden) {
+        openEpisodesDrawer();
+      } else {
+        closeEpisodesDrawer();
+      }
+    });
+  }
+
+  function updateEpisodesUi() {
+    var isSeries = currentPlayback && currentPlayback.section === 'series' && window.VLCSeriesContext;
+    if (!isSeries) {
+      if (ctrlPrevEp) ctrlPrevEp.style.display = 'none';
+      if (ctrlNextEp) ctrlNextEp.style.display = 'none';
+      if (ctrlEpisodes) ctrlEpisodes.style.display = 'none';
+      closeEpisodesDrawer();
+      return;
+    }
+
+    if (ctrlEpisodes) ctrlEpisodes.style.display = 'inline-flex';
+    var list = getEpisodeList();
+    var idx = getCurrentEpisodeIndex();
+
+    if (ctrlPrevEp) {
+      ctrlPrevEp.style.display = 'inline-flex';
+      ctrlPrevEp.disabled = (idx <= 0);
+      ctrlPrevEp.style.opacity = (idx <= 0) ? '0.4' : '1';
+    }
+
+    if (ctrlNextEp) {
+      ctrlNextEp.style.display = 'inline-flex';
+      ctrlNextEp.disabled = (idx < 0 || idx >= list.length - 1);
+      ctrlNextEp.style.opacity = (idx < 0 || idx >= list.length - 1) ? '0.4' : '1';
+    }
+  }
+
   if (video) {
     video.addEventListener('timeupdate', function () {
       if (!video || !video.duration) return;
@@ -674,7 +858,7 @@
   /* ═══════════════════════════════════════════════════════
      PLAY ITEM — called by catalog.js & series.js
   ═══════════════════════════════════════════════════════ */
-  window.VLCPlayItem = async function (section, accountId, itemId, name, seriesId, image) {
+  window.VLCPlayItem = async function (section, accountId, itemId, name, seriesId, image, episodeMeta) {
     var errEl = document.getElementById('player-error');
     var titleEl = document.getElementById('player-title');
     var msgEl = document.getElementById('vlc-item-message');
@@ -708,10 +892,14 @@
         itemId: itemId,
         name: name,
         seriesId: seriesId,
-        image: image || ''
+        image: image || '',
+        episodeMeta: episodeMeta || null
       };
 
       hideResumePrompt();
+      if (typeof updateEpisodesUi === 'function') {
+        updateEpisodesUi();
+      }
 
       if (favBtn) {
         favBtn.style.display = 'inline-flex';

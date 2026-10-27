@@ -129,33 +129,38 @@
           .filter(function (e) { return e.season === season; })
           .sort(function (a, b) { return a.episode - b.episode; });
 
+        // Register series context with active episode list for the player
+        window.VLCSeriesContext = {
+          seriesId: String(item.id),
+          seriesName: item.name || data.title || '',
+          cover: data.cover || item.image || '',
+          accountId: accountId,
+          allEpisodes: episodes,
+          seasonEpisodes: filtered,
+          currentSeason: season,
+          seasons: seasons
+        };
+
         filtered.forEach(function (e) {
-          var card = el('div', undefined, 'vlc-series-episode');
-
-          var epNum = el('span', 'EP ' + (e.episode || ''), 'ep-number');
-          var epTitle = el('span', e.title || ('Episode ' + e.episode), 'ep-title');
-
-          card.appendChild(epNum);
-          card.appendChild(epTitle);
-
-          if (e.duration) {
-            card.appendChild(el('span', e.duration, 'ep-duration'));
-          }
-
-          // Make it a button for keyboard access
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'vlc-series-episode';
-          btn.style.cssText = 'all: unset; display: flex; flex-direction: column; gap: 6px; width: 100%; background: var(--surface); color: var(--text); border: 1px solid var(--border); padding: 16px 18px; min-height: 72px; border-radius: var(--radius); cursor: pointer; text-align: left; transition: border-color .15s, background .15s, transform .15s;';
-          btn.appendChild(epNum);
+
+          var epTop = el('div', undefined, 'ep-card-top');
+          var epNum = el('span', 'EP ' + (e.episode || ''), 'ep-number');
+          epTop.appendChild(epNum);
+          if (e.duration) {
+            epTop.appendChild(el('span', e.duration, 'ep-duration'));
+          }
+          btn.appendChild(epTop);
+
+          var epTitle = el('span', e.title || ('Episode ' + e.episode), 'ep-title');
           btn.appendChild(epTitle);
-          if (e.duration) btn.appendChild(el('span', e.duration, 'ep-duration'));
-          btn.addEventListener('mouseover', function () { btn.style.borderColor = 'var(--border-hi)'; btn.style.background = 'var(--surface-2)'; });
-          btn.addEventListener('mouseout', function () { btn.style.borderColor = 'var(--border)'; btn.style.background = 'var(--surface)'; });
+
           btn.onclick = function () {
             if (window.VLCPlayItem) {
               var epLabel = (item.name ? item.name + ' - ' : '') + (e.title || ('Episode ' + e.episode));
-              window.VLCPlayItem('series', accountId, e.id, epLabel, String(item.id), item.image);
+              window.VLCPlayItem('series', accountId, e.id, epLabel, String(item.id), item.image, e);
             }
           };
 
