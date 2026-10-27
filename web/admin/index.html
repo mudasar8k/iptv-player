@@ -1,398 +1,906 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VLC IPTV · Admin</title><style>body{font:16px Arial,sans-serif;background:#100c1e;color:#eee;margin:24px auto;max-width:950px;padding:0 20px}h1{color:#cdb5ff}section{background:#211934;border:1px solid #453267;border-radius:14px;padding:20px;margin:18px 0}input,select,button{padding:10px;margin:5px;background:#130f25;color:white;border:1px solid #7459a0;border-radius:7px}button{background:#673cb9;cursor:pointer}label{display:inline-block;margin:8px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #524267;text-align:left}small{color:#aaa}#msg{white-space:pre-wrap;color:#eacbff}</style></head><body><h1>VLC IPTV · Central Admin</h1><p><small>Local development prototype · Do not expose to the Internet yet</small></p><section><h2>Admin access</h2><input type="password" id="key" placeholder="VLC_ADMIN_KEY" size="42"><button id="connect">Connect</button><p id="msg"></p></section><section><h2>Add Xtream subscription</h2><form id="add"><input name="label" placeholder="Account label" required><input name="host" placeholder="https://provider.example:port" required><input name="username" placeholder="Username" required><input name="password" type="password" placeholder="Password" required><button>Add securely</button></form><h3>Accounts</h3><div id="accounts">Connect first</div></section>
-<section id="invite-panel">
-<h2>Register a New Device</h2>
-<p>Create an invitation before the person opens the TV website.</p>
-<form id="invite-form">
-<input name="ownerName" placeholder="Person name" required maxlength="100">
-<input name="deviceName" placeholder="Device name" required maxlength="80">
-<input name="location" placeholder="Location" required maxlength="120">
-<select name="deviceType" required>
-<option value="">Device type</option>
-<option>TV</option><option>Mobile</option>
-<option>Laptop</option><option>Desktop</option>
-<option>Tablet</option><option>Other</option>
-</select>
-<label>Subscription <select id="invite-account" required></select></label>
-<label><input type="checkbox" name="live" checked>Live</label>
-<label><input type="checkbox" name="movies" checked>Movies</label>
-<label><input type="checkbox" name="series" checked>Series</label>
-<button type="submit">Generate Invitation</button>
-</form>
-<p id="invite-result" aria-live="polite"></p>
-</section>
-<section><h2>Pending pairing codes</h2><div id="pending"></div><h2>Approved devices</h2><div id="devices"></div></section><script>
-(function(){'use strict';var key='',state=null,csrf='';var $=function(id){return document.getElementById(id);};function say(s){$('msg').textContent=s;}function el(tag,text){var x=document.createElement(tag);x.textContent=text||'';return x;}async function call(path,data){
- var headers={'Content-Type':'application/json'};
- if(csrf) headers['X-IPTV-CSRF']=csrf;
- if(key) headers['Authorization']='Bearer '+key;
- var r=await fetch(path,{
-   method:data?'POST':'GET',
-   credentials:'same-origin',
-   cache:'no-store',
-   headers:headers,
-   body:data?JSON.stringify(data):undefined
- });
- var v=await r.json();
- if(!r.ok)throw Error(v.error||'Request failed ('+r.status+')');
- return v;
-}function checkBox(name,checked){var l=el('label');var c=document.createElement('input');c.type='checkbox';c.checked=checked;l.appendChild(c);l.appendChild(document.createTextNode(name));return {label:l,input:c};}function accountPicker(selected){var s=document.createElement('select');s.multiple=true;s.size=Math.max(2,Math.min(6,state.accounts.length));state.accounts.forEach(function(a){var o=document.createElement('option');o.value=a.id;o.textContent=a.label;o.selected=(selected||[]).indexOf(a.id)!==-1;s.appendChild(o);});return s;}function chosen(s){return Array.from(s.options).filter(function(o){return o.selected;}).map(function(o){return o.value;});}function deviceFields(values){
- values=values||{};
- var box=el('div');
- var fields={};
- [
-  ['ownerName','Owner name',values.ownerName||''],
-  ['deviceName','Device name',values.deviceName||''],
-  ['location','Location',values.location||'']
- ].forEach(function(item){
-  var label=el('label',item[1]+' ');
-  var input=document.createElement('input');
-  input.type='text';
-  input.placeholder=item[1];
-  input.value=item[2];
-  input.maxLength=item[0]==='location'?120:
-                  item[0]==='ownerName'?100:80;
-  label.appendChild(input);
-  box.appendChild(label);
-  fields[item[0]]=input;
- });
- var label=el('label','Device type ');
- var select=document.createElement('select');
- ['','TV','Mobile','Laptop','Desktop','Tablet','Other']
-  .forEach(function(type){
-    var option=document.createElement('option');
-    option.value=type;
-    option.textContent=type||'Select type';
-    option.selected=type===(values.deviceType||'');
-    select.appendChild(option);
-  });
- label.appendChild(select);
- box.appendChild(label);
- fields.deviceType=select;
- return {box:box,fields:fields};
-}
-function populateInviteAccounts(){
- var sel=$('invite-account');
- sel.innerHTML='';
- if(!state||!state.accounts||!state.accounts.length){
-  var o=document.createElement('option');
-  o.value='';
-  o.textContent='No subscriptions configured';
-  sel.appendChild(o);
-  return;
- }
- state.accounts.forEach(function(a){
-  var o=document.createElement('option');
-  o.value=a.id;
-  o.textContent=a.label;
-  sel.appendChild(o);
- });
-}
-function editDetailsForm(device){
- var row=el('tr');
- var cell=document.createElement('td');
- cell.colSpan=6;
- row.dataset.editorFor=device.id;
- var editor=deviceFields({
-  ownerName:device.ownerName||'',
-  deviceName:device.name||'',
-  location:device.location||'',
-  deviceType:device.deviceType||''
- });
- var saveBtn=el('button','Save Details');
- var cancelBtn=el('button','Cancel');
- cancelBtn.type='button';
- var statusSpan=el('small');
- saveBtn.onclick=async function(){
-  saveBtn.disabled=true;
-  statusSpan.textContent='Saving...';
-  try{
-    await call('/api/admin/devices/details',{
-      deviceId:device.id,
-      ownerName:editor.fields.ownerName.value,
-      deviceName:editor.fields.deviceName.value,
-      location:editor.fields.location.value,
-      deviceType:editor.fields.deviceType.value
-    });
-    say('Device details saved.');
-    await refresh();
-  }catch(err){
-    statusSpan.textContent=err.message;
-    saveBtn.disabled=false;
-  }
- };
- cancelBtn.onclick=function(){row.remove();};
- cell.appendChild(editor.box);
- cell.appendChild(saveBtn);
- cell.appendChild(cancelBtn);
- cell.appendChild(statusSpan);
- row.appendChild(cell);
- return row;
-}
-function editAccountForm(a){
- var row=el('tr');
- var cell=document.createElement('td');
- cell.colSpan=4;
- row.dataset.accountEditor=a.id;
- var f=el('form');
- f.onsubmit=async function(ev){
-  ev.preventDefault();
-  var fd=new FormData(f);
-  var payload={id:a.id,host:fd.get('host'),username:fd.get('username'),password:fd.get('password')};
-  try{
-    await call('/api/admin/accounts/update',payload);
-    say('Account updated successfully.');
-    await refresh();
-  }catch(err){say(err.message);}
- };
- var hostInput=document.createElement('input');
- hostInput.name='host';
- hostInput.value=a.host;
- hostInput.required=true;
- var userInput=document.createElement('input');
- userInput.name='username';
- userInput.value=a.username;
- userInput.required=true;
- var passInput=document.createElement('input');
- passInput.name='password';
- passInput.type='password';
- passInput.placeholder='New password (required)';
- passInput.required=true;
- var saveBtn=el('button','Save Account');
- var cancelBtn=el('button','Cancel');
- cancelBtn.type='button';
- cancelBtn.onclick=function(){row.remove();};
- f.appendChild(hostInput);
- f.appendChild(userInput);
- f.appendChild(passInput);
- f.appendChild(saveBtn);
- f.appendChild(cancelBtn);
- cell.appendChild(f);
- row.appendChild(cell);
- return row;
-}
-function renderAccounts(){
- var d=$('accounts');
- d.innerHTML='';
- if(!state.accounts.length){
-  d.textContent='No accounts configured yet.';
-  populateInviteAccounts();
-  return;
- }
- var t=el('table');
- var head=el('tr');
- ['Label','Host','Username','Actions'].forEach(function(h){var th=el('th',h);head.appendChild(th);});
- t.appendChild(head);
- state.accounts.forEach(function(a){
-  var tr=el('tr');
-  [a.label,a.host,a.username].forEach(function(txt){var td=el('td',txt);tr.appendChild(td);});
-  var actions=el('td');
-  var edit=el('button','Edit');
-  edit.onclick=function(){
-    var existing=document.querySelector('[data-account-editor="'+a.id+'"]');
-    if(existing){existing.remove();return;}
-    tr.after(editAccountForm(a));
-  };
-  actions.appendChild(edit);
-  tr.appendChild(actions);
-  t.appendChild(tr);
- });
- d.appendChild(t);
- populateInviteAccounts();
-}
-function renderPending(){
- var d=$('pending');
- d.innerHTML='';
- if(!state.pending.length){d.textContent='No pairing codes waiting for approval.';return;}
- state.pending.forEach(function(p){
-  var card=el('div');
-  card.style.borderTop='1px solid #443264';
-  card.style.padding='10px 0';
-  var h=el('h3','Pairing code: '+p.code);
-  var meta=el('p','Device: '+(p.name||'Unknown')+' · Platform: '+(p.platform||'browser')+' · Expires in: '+Math.max(0,Math.round((p.expires-Date.now())/1000))+'s');
-  var dev=deviceFields({deviceName:p.name||''});
-  var picker=accountPicker();
-  var live=checkBox('Live',true);
-  var movies=checkBox('Movies',true);
-  var series=checkBox('Series',true);
-  var approve=el('button','Approve device');
-  approve.onclick=async function(){
-    try{
-      await call('/api/admin/pair/approve',{
-        code:p.code,
-        deviceName:dev.fields.deviceName.value,
-        ownerName:dev.fields.ownerName.value,
-        location:dev.fields.location.value,
-        deviceType:dev.fields.deviceType.value,
-        accounts:chosen(picker),
-        live:live.input.checked,
-        movies:movies.input.checked,
-        series:series.input.checked
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>VLC IPTV · Central Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0919;
+      --bg-card: #17122b;
+      --bg-card-hover: #1f183a;
+      --border: rgba(160, 120, 255, 0.16);
+      --border-hi: rgba(187, 124, 255, 0.45);
+      --purple: #9b47f0;
+      --purple-hi: #bb7cff;
+      --purple-glow: rgba(155, 71, 240, 0.35);
+      --text: #f3efff;
+      --text-2: #aba1c9;
+      --text-3: #756a94;
+      --danger: #ff4757;
+      --danger-bg: rgba(255, 71, 87, 0.12);
+      --success: #2ed573;
+      --success-bg: rgba(46, 213, 115, 0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html { color-scheme: dark; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 16px;
+      padding-bottom: 80px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 16px 4px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    h1 {
+      font-size: clamp(22px, 5vw, 28px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 30%, var(--purple-hi));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .header-sub {
+      font-size: 13px;
+      color: var(--text-3);
+    }
+
+    /* ── Section Cards ── */
+    section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: clamp(16px, 4vw, 24px);
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-2);
+      margin: 18px 0 10px;
+    }
+    p {
+      color: var(--text-2);
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    /* ── Inputs & Controls ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 600px) {
+      .form-grid-2 { grid-template-columns: 1fr 1fr; }
+      .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: #110d21;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: var(--purple-hi);
+      box-shadow: 0 0 0 3px var(--purple-glow);
+    }
+    input::placeholder { color: var(--text-3); }
+
+    /* Touch-friendly buttons */
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #7c3aed, var(--purple));
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      min-height: 44px; /* mobile tap target */
+      transition: transform 0.15s, opacity 0.15s, background 0.2s;
+    }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: rgba(160, 120, 255, 0.1);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-danger {
+      background: var(--danger-bg);
+      border-color: rgba(255, 71, 87, 0.3);
+      color: #ff6b81;
+    }
+    .btn-sm {
+      padding: 7px 12px;
+      font-size: 13px;
+      min-height: 36px;
+    }
+
+    /* ── Checkbox Chips ── */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+    .check-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      background: #110d21;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .check-chip input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--purple-hi);
+      margin: 0;
+      cursor: pointer;
+    }
+    .check-chip:has(input:checked) {
+      background: rgba(155, 71, 240, 0.2);
+      border-color: var(--purple-hi);
+      color: #fff;
+    }
+
+    /* ── Tables & Mobile Horizontal Scrolling ── */
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: #110d21;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 580px; /* guarantees readable layout on phones */
+      font-size: 13.5px;
+    }
+    th {
+      background: #1a1532;
+      color: var(--text-2);
+      font-weight: 600;
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    small { color: var(--text-3); font-size: 11.5px; }
+
+    /* ── Notification Banner ── */
+    #msg {
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      white-space: pre-wrap;
+      color: var(--purple-hi);
+      background: rgba(155, 71, 240, 0.08);
+      border: 1px solid rgba(155, 71, 240, 0.2);
+      display: none;
+    }
+    #msg:not(:empty) { display: block; }
+
+    /* ── Code / Alert badge ── */
+    .invite-code-card {
+      margin-top: 14px;
+      padding: 16px;
+      background: rgba(46, 213, 115, 0.1);
+      border: 1px solid rgba(46, 213, 115, 0.3);
+      border-radius: var(--radius-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .invite-code-val {
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: 800;
+      color: #2ed573;
+      letter-spacing: 0.15em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(160, 120, 255, 0.15);
+      color: var(--purple-hi);
+    }
+
+    /* ── Pending Code Card ── */
+    .pending-card {
+      background: #110d21;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      section { padding: 16px; margin-bottom: 16px; }
+      .check-chip { width: 100%; justify-content: flex-start; }
+      button { width: 100%; }
+      .btn-sm { width: auto; }
+      .table-actions { display: flex; gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>VLC IPTV · Admin Dashboard</h1>
+      <p class="header-sub">Manage IPTV subscriptions, invitation codes & paired devices</p>
+    </header>
+
+    <!-- Admin Access -->
+    <section id="auth-panel">
+      <h2>Admin Access</h2>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <input type="password" id="key" placeholder="Enter VLC_ADMIN_KEY" autocomplete="off">
+        <button id="connect" type="button">Connect to Admin</button>
+      </div>
+      <p id="msg"></p>
+    </section>
+
+    <!-- Subscriptions -->
+    <section id="subs-panel">
+      <h2>Xtream Subscriptions</h2>
+      <form id="add" style="margin-bottom:20px;">
+        <div class="form-grid form-grid-2" style="margin-bottom:12px;">
+          <input name="label" placeholder="Account label (e.g. Living Room)" required>
+          <input name="host" placeholder="Host (http://provider.url:port)" required>
+          <input name="username" placeholder="Username" required>
+          <input name="password" type="password" placeholder="Password" required>
+        </div>
+        <button type="submit">+ Add Subscription Securely</button>
+      </form>
+      <h3>Configured Accounts</h3>
+      <div id="accounts">Connect first</div>
+    </section>
+
+    <!-- Register Device / Invitation -->
+    <section id="invite-panel">
+      <h2>Register a New Device</h2>
+      <p>Generate a private 6-digit invitation code before pairing the device on TV.</p>
+      <form id="invite-form">
+        <div class="form-grid form-grid-2">
+          <input name="ownerName" placeholder="Owner / Person name" required maxlength="100">
+          <input name="deviceName" placeholder="Device name (e.g. Bedroom TV)" required maxlength="80">
+          <input name="location" placeholder="Location (e.g. Home / Room)" required maxlength="120">
+          <select name="deviceType" required>
+            <option value="">Select device type...</option>
+            <option value="TV">TV</option>
+            <option value="Mobile">Mobile</option>
+            <option value="Laptop">Laptop</option>
+            <option value="Desktop">Desktop</option>
+            <option value="Tablet">Tablet</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div style="margin-top:14px;">
+          <label style="font-size:13px; color:var(--text-2); display:block; margin-bottom:6px;">Assign Subscription:</label>
+          <select id="invite-account" required></select>
+        </div>
+
+        <div class="checkbox-group">
+          <label class="check-chip"><input type="checkbox" name="live" checked> Live TV</label>
+          <label class="check-chip"><input type="checkbox" name="movies" checked> Movies (VOD)</label>
+          <label class="check-chip"><input type="checkbox" name="series" checked> Series</label>
+        </div>
+
+        <button type="submit">Generate Invitation Code</button>
+      </form>
+      <div id="invite-result" aria-live="polite"></div>
+    </section>
+
+    <!-- Pending & Approved Devices -->
+    <section>
+      <h2>Pending Pairing Codes</h2>
+      <div id="pending"><p style="color:var(--text-3); font-size:14px;">No pairing codes waiting for approval.</p></div>
+
+      <h2 style="margin-top:28px;">Approved Devices</h2>
+      <div id="devices"><p style="color:var(--text-3); font-size:14px;">Connect first to view devices.</p></div>
+    </section>
+  </div>
+
+  <script>
+  (function(){
+    'use strict';
+    var key = '', state = null, csrf = '';
+    var $ = function(id) { return document.getElementById(id); };
+    function say(s) { $('msg').textContent = s; }
+    function el(tag, text) { var x = document.createElement(tag); x.textContent = text || ''; return x; }
+
+    async function call(path, data) {
+      var headers = { 'Content-Type': 'application/json' };
+      if (csrf) headers['X-IPTV-CSRF'] = csrf;
+      if (key) headers['Authorization'] = 'Bearer ' + key;
+      var r = await fetch(path, {
+        method: data ? 'POST' : 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: headers,
+        body: data ? JSON.stringify(data) : undefined
       });
-      say('Device approved.');
-      await refresh();
-    }catch(err){say(err.message);}
-  };
-  card.appendChild(h);
-  card.appendChild(meta);
-  card.appendChild(dev.box);
-  card.appendChild(picker);
-  card.appendChild(live.label);
-  card.appendChild(movies.label);
-  card.appendChild(series.label);
-  card.appendChild(approve);
-  d.appendChild(card);
- });
-}
-function renderDevices(){
- var d=$('devices');
- d.innerHTML='';
- if(!state.devices.length){d.textContent='No devices approved yet.';return;}
- var t=el('table');
- var head=el('tr');
- ['Device','Owner / Loc','Type','Permissions','Subscriptions','Actions'].forEach(function(h){var th=el('th',h);head.appendChild(th);});
- t.appendChild(head);
- state.devices.forEach(function(dev){
-  var tr=el('tr');
-  var nameCell=el('td',dev.name);
-  var small=el('small','Last seen: '+(dev.lastSeen?new Date(dev.lastSeen).toLocaleString():'never'));
-  nameCell.appendChild(document.createElement('br'));
-  nameCell.appendChild(small);
-  var ownerLoc=el('td',(dev.ownerName||'—')+' / '+(dev.location||'—'));
-  var typeCell=el('td',dev.deviceType||'—');
-  var p=dev.permissions||{};
-  var perms=['live','movies','series'].filter(function(k){return p[k];}).join(', ')||(p.all?'all':'none');
-  var permCell=el('td',perms);
-  var accNames=(dev.accounts||[]).map(function(id){var a=state.accounts.find(function(x){return x.id===id;});return a?a.label:id;}).join(', ')||'none';
-  var accCell=el('td',accNames);
-  var actions=el('td');
-  var edit=el('button','Edit');
-  edit.onclick=function(){
-    var existing=document.querySelector('[data-editor-for="'+dev.id+'"]');
-    if(existing){existing.remove();return;}
-    tr.after(editDetailsForm(dev));
-  };
-  var revoke=el('button','Revoke');
-  revoke.onclick=async function(){
-    if(!confirm('Revoke access for '+dev.name+'?'))return;
-    try{
-      await call('/api/admin/devices/revoke',{deviceId:dev.id});
-      say('Device access revoked.');
-      await refresh();
-    }catch(err){say(err.message);}
-  };
-  actions.appendChild(edit);
-  actions.appendChild(revoke);
-  tr.appendChild(nameCell);
-  tr.appendChild(ownerLoc);
-  tr.appendChild(typeCell);
-  tr.appendChild(permCell);
-  tr.appendChild(accCell);
-  tr.appendChild(actions);
-  t.appendChild(tr);
- });
- d.appendChild(t);
-}
-async function refresh(){
- if(!key&&!csrf)return;
- state=await call('/api/admin/state');
- renderAccounts();
- renderPending();
- renderDevices();
-}
-async function disconnectAdmin(){
- say('Disconnecting...');
- try{
-   await fetch('/api/admin/session/logout',{
-     method:'POST',
-     credentials:'same-origin',
-     headers: csrf ? {'X-IPTV-CSRF':csrf} : {}
-   });
- }catch(_){}
- try{
-   await fetch('/api/admin/session',{method:'DELETE',credentials:'same-origin'});
- }catch(_){}
- csrf='';
- key='';
- $('key').style.display='inline-block';
- $('key').value='';
- $('connect').textContent='Connect';
- $('connect').onclick=connectAdmin;
- say('Disconnected.');
- location.reload();
-}
+      var v = await r.json();
+      if (!r.ok) throw Error(v.error || 'Request failed (' + r.status + ')');
+      return v;
+    }
 
-async function restoreAdmin(){
- try{
-   var r=await fetch('/api/admin/session',{credentials:'same-origin',cache:'no-store'});
-   if(!r.ok)return;
-   var data=await r.json();
-   csrf=data.csrf||data.csrfToken||'';
-   if(!csrf)return;
-   $('key').style.display='none';
-   $('connect').textContent='Disconnect';
-   $('connect').onclick=disconnectAdmin;
-   say('Admin session active.');
-   await refresh();
- }catch(err){
-   say('Session check: ' + (err.message||'failed'));
- }
-}
+    function checkBox(name, checked) {
+      var l = el('label');
+      l.className = 'check-chip';
+      var c = document.createElement('input');
+      c.type = 'checkbox';
+      c.checked = checked;
+      l.appendChild(c);
+      l.appendChild(document.createTextNode(' ' + name));
+      return { label: l, input: c };
+    }
 
-async function connectAdmin(){
- var enteredKey=$('key').value.trim();
- if(!enteredKey)return say('Enter the admin key');
- say('Connecting...');
- key=enteredKey;
- try{
-   var r=await fetch('/api/admin/session/login',{
-     method:'POST',
-     credentials:'same-origin',
-     headers:{
-       'Content-Type':'application/json',
-       'Authorization':'Bearer '+enteredKey
-     }
-   });
-   if(r.ok){
-     var data=await r.json();
-     csrf=data.csrf||data.csrfToken||'';
-     key='';
-     $('key').value='';
-     $('key').style.display='none';
-     $('connect').textContent='Disconnect';
-     $('connect').onclick=disconnectAdmin;
-     say('Connected securely via HttpOnly session.');
-     await refresh();
-     return;
-   }
- }catch(_){}
+    function accountPicker(selected) {
+      var s = document.createElement('select');
+      s.multiple = true;
+      s.size = Math.max(2, Math.min(5, (state && state.accounts ? state.accounts.length : 2)));
+      if (state && state.accounts) {
+        state.accounts.forEach(function(a) {
+          var o = document.createElement('option');
+          o.value = a.id;
+          o.textContent = a.label;
+          o.selected = (selected || []).indexOf(a.id) !== -1;
+          s.appendChild(o);
+        });
+      }
+      return s;
+    }
 
- try{
-   await refresh();
-   $('key').style.display='none';
-   $('connect').textContent='Disconnect';
-   $('connect').onclick=disconnectAdmin;
-   say('Connected via Bearer token.');
- }catch(err){
-   key='';
-   say('Authentication failed: '+(err.message||'Invalid key'));
- }
-}
-$('connect').onclick=connectAdmin;
-$('add').onsubmit=async function(ev){
- ev.preventDefault();
- var f=new FormData(this);
- try{
-   await call('/api/admin/accounts',Object.fromEntries(f.entries()));
-   this.reset();
-   say('Account saved encrypted at rest.');
-   await refresh();
- }catch(err){
-   say(err.message);
- }
-};
-setInterval(function(){
- if((key||csrf)&&!document.querySelector('[data-account-editor]'))refresh().catch(function(){});
-},15000);
-restoreAdmin();
-})();
-</script></body></html>
+    function chosen(s) {
+      return Array.from(s.options).filter(function(o) { return o.selected; }).map(function(o) { return o.value; });
+    }
+
+    function deviceFields(values) {
+      values = values || {};
+      var box = el('div');
+      box.className = 'form-grid form-grid-2';
+      box.style.margin = '10px 0';
+      var fields = {};
+      [
+        ['ownerName', 'Owner name', values.ownerName || ''],
+        ['deviceName', 'Device name', values.deviceName || ''],
+        ['location', 'Location', values.location || '']
+      ].forEach(function(item) {
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = item[1];
+        input.value = item[2];
+        input.maxLength = item[0] === 'location' ? 120 : item[0] === 'ownerName' ? 100 : 80;
+        box.appendChild(input);
+        fields[item[0]] = input;
+      });
+      var select = document.createElement('select');
+      ['', 'TV', 'Mobile', 'Laptop', 'Desktop', 'Tablet', 'Other'].forEach(function(type) {
+        var option = document.createElement('option');
+        option.value = type;
+        option.textContent = type || 'Select type';
+        option.selected = type === (values.deviceType || '');
+        select.appendChild(option);
+      });
+      box.appendChild(select);
+      fields.deviceType = select;
+      return { box: box, fields: fields };
+    }
+
+    function populateInviteAccounts() {
+      var sel = $('invite-account');
+      if (!sel) return;
+      sel.innerHTML = '';
+      if (!state || !state.accounts || !state.accounts.length) {
+        var o = document.createElement('option');
+        o.value = '';
+        o.textContent = 'No subscriptions configured yet';
+        sel.appendChild(o);
+        return;
+      }
+      state.accounts.forEach(function(a) {
+        var o = document.createElement('option');
+        o.value = a.id;
+        o.textContent = a.label;
+        sel.appendChild(o);
+      });
+    }
+
+    function editDetailsForm(device) {
+      var row = el('tr');
+      var cell = document.createElement('td');
+      cell.colSpan = 6;
+      row.dataset.editorFor = device.id;
+      var editor = deviceFields({
+        ownerName: device.ownerName || '',
+        deviceName: device.name || '',
+        location: device.location || '',
+        deviceType: device.deviceType || ''
+      });
+      var btnGroup = el('div');
+      btnGroup.style.display = 'flex';
+      btnGroup.style.gap = '8px';
+      btnGroup.style.marginTop = '8px';
+      var saveBtn = el('button', 'Save Details');
+      saveBtn.className = 'btn-sm';
+      var cancelBtn = el('button', 'Cancel');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'btn-sm btn-secondary';
+      var statusSpan = el('small');
+      saveBtn.onclick = async function() {
+        saveBtn.disabled = true;
+        statusSpan.textContent = ' Saving...';
+        try {
+          await call('/api/admin/devices/details', {
+            deviceId: device.id,
+            ownerName: editor.fields.ownerName.value,
+            deviceName: editor.fields.deviceName.value,
+            location: editor.fields.location.value,
+            deviceType: editor.fields.deviceType.value
+          });
+          say('Device details saved.');
+          await refresh();
+        } catch (err) {
+          statusSpan.textContent = ' ' + err.message;
+          saveBtn.disabled = false;
+        }
+      };
+      cancelBtn.onclick = function() { row.remove(); };
+      btnGroup.appendChild(saveBtn);
+      btnGroup.appendChild(cancelBtn);
+      btnGroup.appendChild(statusSpan);
+      cell.appendChild(editor.box);
+      cell.appendChild(btnGroup);
+      row.appendChild(cell);
+      return row;
+    }
+
+    function editAccountForm(a) {
+      var row = el('tr');
+      var cell = document.createElement('td');
+      cell.colSpan = 4;
+      row.dataset.accountEditor = a.id;
+      var f = el('form');
+      f.className = 'form-grid form-grid-2';
+      f.style.margin = '10px 0';
+      f.onsubmit = async function(ev) {
+        ev.preventDefault();
+        var fd = new FormData(f);
+        var payload = { id: a.id, host: fd.get('host'), username: fd.get('username'), password: fd.get('password') };
+        try {
+          await call('/api/admin/accounts/update', payload);
+          say('Account updated successfully.');
+          await refresh();
+        } catch (err) { say(err.message); }
+      };
+      var hostInput = document.createElement('input');
+      hostInput.name = 'host';
+      hostInput.value = a.host;
+      hostInput.required = true;
+      var userInput = document.createElement('input');
+      userInput.name = 'username';
+      userInput.value = a.username;
+      userInput.required = true;
+      var passInput = document.createElement('input');
+      passInput.name = 'password';
+      passInput.type = 'password';
+      passInput.placeholder = 'New password';
+      passInput.required = true;
+      var btnGroup = el('div');
+      btnGroup.style.display = 'flex';
+      btnGroup.style.gap = '8px';
+      var saveBtn = el('button', 'Save');
+      saveBtn.className = 'btn-sm';
+      var cancelBtn = el('button', 'Cancel');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'btn-sm btn-secondary';
+      cancelBtn.onclick = function() { row.remove(); };
+      btnGroup.appendChild(saveBtn);
+      btnGroup.appendChild(cancelBtn);
+
+      f.appendChild(hostInput);
+      f.appendChild(userInput);
+      f.appendChild(passInput);
+      f.appendChild(btnGroup);
+      cell.appendChild(f);
+      row.appendChild(cell);
+      return row;
+    }
+
+    function renderAccounts() {
+      var d = $('accounts');
+      d.innerHTML = '';
+      if (!state.accounts.length) {
+        d.innerHTML = '<p style="color:var(--text-3); font-size:14px;">No accounts configured yet.</p>';
+        populateInviteAccounts();
+        return;
+      }
+      var wrap = el('div');
+      wrap.className = 'table-wrap';
+      var t = el('table');
+      var head = el('tr');
+      ['Label', 'Host', 'Username', 'Actions'].forEach(function(h) { var th = el('th', h); head.appendChild(th); });
+      t.appendChild(head);
+      state.accounts.forEach(function(a) {
+        var tr = el('tr');
+        [a.label, a.host, a.username].forEach(function(txt) { var td = el('td', txt); tr.appendChild(td); });
+        var actions = el('td');
+        var edit = el('button', 'Edit');
+        edit.className = 'btn-sm btn-secondary';
+        edit.onclick = function() {
+          var existing = document.querySelector('[data-account-editor="' + a.id + '"]');
+          if (existing) { existing.remove(); return; }
+          tr.after(editAccountForm(a));
+        };
+        actions.appendChild(edit);
+        tr.appendChild(actions);
+        t.appendChild(tr);
+      });
+      wrap.appendChild(t);
+      d.appendChild(wrap);
+      populateInviteAccounts();
+    }
+
+    function renderPending() {
+      var d = $('pending');
+      d.innerHTML = '';
+      if (!state.pending.length) {
+        d.innerHTML = '<p style="color:var(--text-3); font-size:14px;">No pairing codes waiting for approval.</p>';
+        return;
+      }
+      state.pending.forEach(function(p) {
+        var card = el('div');
+        card.className = 'pending-card';
+        var h = el('h3', 'Pairing Code: ' + p.code);
+        h.style.color = 'var(--purple-hi)';
+        var meta = el('p', 'Device: ' + (p.name || 'Unknown') + ' · Platform: ' + (p.platform || 'browser') + ' · Expires in: ' + Math.max(0, Math.round((p.expires - Date.now()) / 1000)) + 's');
+        var dev = deviceFields({ deviceName: p.name || '' });
+        var picker = accountPicker();
+        var checks = el('div');
+        checks.className = 'checkbox-group';
+        var live = checkBox('Live TV', true);
+        var movies = checkBox('Movies', true);
+        var series = checkBox('Series', true);
+        checks.appendChild(live.label);
+        checks.appendChild(movies.label);
+        checks.appendChild(series.label);
+        var approve = el('button', 'Approve Device');
+        approve.onclick = async function() {
+          try {
+            await call('/api/admin/pair/approve', {
+              code: p.code,
+              deviceName: dev.fields.deviceName.value,
+              ownerName: dev.fields.ownerName.value,
+              location: dev.fields.location.value,
+              deviceType: dev.fields.deviceType.value,
+              accounts: chosen(picker),
+              live: live.input.checked,
+              movies: movies.input.checked,
+              series: series.input.checked
+            });
+            say('Device approved.');
+            await refresh();
+          } catch (err) { say(err.message); }
+        };
+        card.appendChild(h);
+        card.appendChild(meta);
+        card.appendChild(dev.box);
+        card.appendChild(picker);
+        card.appendChild(checks);
+        card.appendChild(approve);
+        d.appendChild(card);
+      });
+    }
+
+    function renderDevices() {
+      var d = $('devices');
+      d.innerHTML = '';
+      if (!state.devices.length) {
+        d.innerHTML = '<p style="color:var(--text-3); font-size:14px;">No devices approved yet.</p>';
+        return;
+      }
+      var wrap = el('div');
+      wrap.className = 'table-wrap';
+      var t = el('table');
+      var head = el('tr');
+      ['Device', 'Owner / Loc', 'Type', 'Permissions', 'Subscriptions', 'Actions'].forEach(function(h) {
+        var th = el('th', h); head.appendChild(th);
+      });
+      t.appendChild(head);
+      state.devices.forEach(function(dev) {
+        var tr = el('tr');
+        var nameCell = el('td', dev.name);
+        var small = el('small', 'Last seen: ' + (dev.lastSeen ? new Date(dev.lastSeen).toLocaleString() : 'never'));
+        nameCell.appendChild(document.createElement('br'));
+        nameCell.appendChild(small);
+
+        var ownerLoc = el('td', (dev.ownerName || '—') + ' / ' + (dev.location || '—'));
+        var typeCell = el('td', dev.deviceType || '—');
+
+        var p = dev.permissions || {};
+        var perms = ['live', 'movies', 'series'].filter(function(k) { return p[k]; }).join(', ') || (p.all ? 'all' : 'none');
+        var permCell = el('td');
+        var permBadge = el('span', perms);
+        permBadge.className = 'badge';
+        permCell.appendChild(permBadge);
+
+        var accNames = (dev.accounts || []).map(function(id) {
+          var a = state.accounts.find(function(x) { return x.id === id; });
+          return a ? a.label : id;
+        }).join(', ') || 'none';
+        var accCell = el('td', accNames);
+
+        var actions = el('td');
+        var btnGroup = el('div');
+        btnGroup.className = 'table-actions';
+        btnGroup.style.display = 'flex';
+        btnGroup.style.gap = '6px';
+        var edit = el('button', 'Edit');
+        edit.className = 'btn-sm btn-secondary';
+        edit.onclick = function() {
+          var existing = document.querySelector('[data-editor-for="' + dev.id + '"]');
+          if (existing) { existing.remove(); return; }
+          tr.after(editDetailsForm(dev));
+        };
+        var revoke = el('button', 'Revoke');
+        revoke.className = 'btn-sm btn-danger';
+        revoke.onclick = async function() {
+          if (!confirm('Revoke access for ' + dev.name + '?')) return;
+          try {
+            await call('/api/admin/devices/revoke', { deviceId: dev.id });
+            say('Device access revoked.');
+            await refresh();
+          } catch (err) { say(err.message); }
+        };
+        btnGroup.appendChild(edit);
+        btnGroup.appendChild(revoke);
+        actions.appendChild(btnGroup);
+
+        tr.appendChild(nameCell);
+        tr.appendChild(ownerLoc);
+        tr.appendChild(typeCell);
+        tr.appendChild(permCell);
+        tr.appendChild(accCell);
+        tr.appendChild(actions);
+        t.appendChild(tr);
+      });
+      wrap.appendChild(t);
+      d.appendChild(wrap);
+    }
+
+    async function refresh() {
+      if (!key && !csrf) return;
+      state = await call('/api/admin/state');
+      renderAccounts();
+      renderPending();
+      renderDevices();
+    }
+
+    async function disconnectAdmin() {
+      say('Disconnecting...');
+      try {
+        await fetch('/api/admin/session/logout', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: csrf ? { 'X-IPTV-CSRF': csrf } : {}
+        });
+      } catch (_) {}
+      try {
+        await fetch('/api/admin/session', { method: 'DELETE', credentials: 'same-origin' });
+      } catch (_) {}
+      csrf = '';
+      key = '';
+      $('key').style.display = 'block';
+      $('key').value = '';
+      $('connect').textContent = 'Connect to Admin';
+      $('connect').onclick = connectAdmin;
+      say('Disconnected.');
+      location.reload();
+    }
+
+    async function restoreAdmin() {
+      try {
+        var r = await fetch('/api/admin/session', { credentials: 'same-origin', cache: 'no-store' });
+        if (!r.ok) return;
+        var data = await r.json();
+        csrf = data.csrf || data.csrfToken || '';
+        if (!csrf) return;
+        $('key').style.display = 'none';
+        $('connect').textContent = 'Disconnect Admin';
+        $('connect').className = 'btn-danger';
+        $('connect').onclick = disconnectAdmin;
+        say('Admin session active.');
+        await refresh();
+      } catch (err) {
+        say('Session check: ' + (err.message || 'failed'));
+      }
+    }
+
+    async function connectAdmin() {
+      var enteredKey = $('key').value.trim();
+      if (!enteredKey) return say('Enter the admin key');
+      say('Connecting...');
+      key = enteredKey;
+      try {
+        var r = await fetch('/api/admin/session/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + enteredKey
+          }
+        });
+        if (r.ok) {
+          var data = await r.json();
+          csrf = data.csrf || data.csrfToken || '';
+          key = '';
+          $('key').value = '';
+          $('key').style.display = 'none';
+          $('connect').textContent = 'Disconnect Admin';
+          $('connect').className = 'btn-danger';
+          $('connect').onclick = disconnectAdmin;
+          say('Connected securely via HttpOnly session.');
+          await refresh();
+          return;
+        }
+      } catch (_) {}
+
+      try {
+        await refresh();
+        $('key').style.display = 'none';
+        $('connect').textContent = 'Disconnect Admin';
+        $('connect').className = 'btn-danger';
+        $('connect').onclick = disconnectAdmin;
+        say('Connected via Bearer token.');
+      } catch (err) {
+        key = '';
+        say('Authentication failed: ' + (err.message || 'Invalid key'));
+      }
+    }
+
+    $('connect').onclick = connectAdmin;
+
+    $('add').onsubmit = async function(ev) {
+      ev.preventDefault();
+      var f = new FormData(this);
+      try {
+        await call('/api/admin/accounts', Object.fromEntries(f.entries()));
+        this.reset();
+        say('Account saved encrypted at rest.');
+        await refresh();
+      } catch (err) {
+        say(err.message);
+      }
+    };
+
+    /* ── Mobile-friendly Invitation Generator Handler ── */
+    var inviteForm = $('invite-form');
+    if (inviteForm) {
+      inviteForm.onsubmit = async function(ev) {
+        ev.preventDefault();
+        var form = this;
+        var btn = form.querySelector('button[type="submit"]');
+        var data = new FormData(form);
+        var account = $('invite-account') ? $('invite-account').value : '';
+
+        if (!account) {
+          $('invite-result').innerHTML = '<p style="color:var(--danger); margin-top:10px;">Select a subscription first.</p>';
+          return;
+        }
+
+        btn.disabled = true;
+        try {
+          var res = await call('/api/admin/invitations', {
+            ownerName: data.get('ownerName'),
+            deviceName: data.get('deviceName'),
+            location: data.get('location'),
+            deviceType: data.get('deviceType'),
+            accounts: [account],
+            live: data.has('live'),
+            movies: data.has('movies'),
+            series: data.has('series')
+          });
+
+          $('invite-result').innerHTML =
+            '<div class="invite-code-card">' +
+            '  <span style="font-size:12px; font-weight:700; color:#2ed573; text-transform:uppercase;">Invitation Code Generated</span>' +
+            '  <span class="invite-code-val">' + res.code + '</span>' +
+            '  <span style="font-size:12px; color:var(--text-2);">Expires in 10 minutes. Enter this code on the TV or device screen.</span>' +
+            '</div>';
+          form.reset();
+          populateInviteAccounts();
+        } catch (err) {
+          $('invite-result').innerHTML = '<p style="color:var(--danger); margin-top:10px;">' + (err.message || 'Failed') + '</p>';
+        } finally {
+          btn.disabled = false;
+        }
+      };
+    }
+
+    setInterval(function() {
+      if ((key || csrf) && !document.querySelector('[data-account-editor]')) {
+        refresh().catch(function() {});
+      }
+    }, 15000);
+
+    restoreAdmin();
+  })();
+  </script>
+</body>
+</html>
