@@ -767,8 +767,15 @@
     });
 
     video.addEventListener('leavepictureinpicture', function () {
-      if (playerScreen && current !== 'player') {
+      if (playerScreen) {
         playerScreen.classList.remove('pip-background');
+      }
+      // When user clicks the browser's "Back to tab" button on the PiP overlay,
+      // bring them directly back into the full Player screen without stopping video!
+      if (currentPlayback && !video.paused) {
+        showScreen('player');
+        showHud();
+      } else if (playerScreen && current !== 'player') {
         playerScreen.classList.add('hidden');
       }
     });
