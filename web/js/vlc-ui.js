@@ -30,6 +30,10 @@
   };
   var video = document.getElementById('video');
 
+  function isPipActive() {
+    return Boolean(document.pictureInPictureElement);
+  }
+
   function showScreen(name) {
     Object.keys(screens).forEach(function (k) {
       var el = screens[k];
@@ -37,7 +41,14 @@
       if (k === name) {
         el.classList.remove('hidden');
       } else {
-        el.classList.add('hidden');
+        // If switching away from player but Picture-in-Picture is active, do not display:none the player
+        if (k === 'player' && isPipActive()) {
+          el.classList.add('pip-background');
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+          el.classList.remove('pip-background');
+        }
       }
     });
     // Sync nav active state
@@ -98,6 +109,13 @@
 
   function goBack() {
     if (current === 'player') {
+      // If PiP is active, user clicking Back wants to navigate back to previous screen
+      // while KEEPING Picture-in-Picture running!
+      if (isPipActive()) {
+        showScreen(previous || 'home');
+        return;
+      }
+
       if (currentPlayback && video && video.currentTime > 10) {
         recordProgress(currentPlayback, video.currentTime, video.duration);
       }
@@ -667,6 +685,22 @@
         }
       } catch (_) {}
       showHud();
+    });
+  }
+
+  if (video) {
+    video.addEventListener('enterpictureinpicture', function () {
+      if (playerScreen && current !== 'player') {
+        playerScreen.classList.add('pip-background');
+        playerScreen.classList.remove('hidden');
+      }
+    });
+
+    video.addEventListener('leavepictureinpicture', function () {
+      if (playerScreen && current !== 'player') {
+        playerScreen.classList.remove('pip-background');
+        playerScreen.classList.add('hidden');
+      }
     });
   }
 
