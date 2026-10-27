@@ -213,28 +213,82 @@
         </div>
       </div>
 
-      <!-- Bottom HUD Overlay: Timeline & TV Remote Controls -->
+      <!-- Bottom HUD Overlay: Full-width Timeline & Smart TV Controls -->
       <div class="player-hud player-hud--bottom" id="player-hud-bottom">
+        <!-- Full-width Seek Scrub Bar -->
         <div class="player-timeline-wrap">
-          <span id="player-cur-time" class="time-readout">00:00:00</span>
-          <div class="player-scrub-track" id="player-scrub-track">
+          <div class="player-scrub-track" id="player-scrub-track" tabindex="0" role="slider" aria-label="Seek timeline">
+            <div class="player-scrub-buffer" id="player-scrub-buffer"></div>
             <div class="player-scrub-fill" id="player-scrub-fill"></div>
             <div class="player-scrub-thumb" id="player-scrub-thumb"></div>
           </div>
-          <span id="player-total-time" class="time-readout">00:00:00</span>
         </div>
 
+        <!-- Player Controls Bar -->
         <div class="player-ctrls-bar">
-          <button type="button" id="ctrl-rewind" class="player-ctrl-btn" title="Rewind 10 seconds">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><text x="12" y="16" font-size="8" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">10</text></svg>
-          </button>
-          <button type="button" id="ctrl-playpause" class="player-ctrl-btn player-ctrl-btn--main" title="Play / Pause">
-            <svg id="ctrl-play-icon" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-            <svg id="ctrl-pause-icon" viewBox="0 0 24 24" fill="currentColor" width="24" height="24" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-          </button>
-          <button type="button" id="ctrl-forward" class="player-ctrl-btn" title="Fast Forward 10 seconds">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><text x="12" y="16" font-size="8" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">10</text></svg>
-          </button>
+          <div class="ctrls-left">
+            <button type="button" id="ctrl-playpause" class="player-ctrl-btn" title="Play / Pause (Space / OK)">
+              <svg id="ctrl-play-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              <svg id="ctrl-pause-icon" viewBox="0 0 24 24" fill="currentColor" width="20" height="20" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button type="button" id="ctrl-rewind" class="player-ctrl-btn" title="Rewind 10 seconds (← Left)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><text x="12" y="16" font-size="8" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">10</text></svg>
+            </button>
+            <button type="button" id="ctrl-forward" class="player-ctrl-btn" title="Fast Forward 10 seconds (→ Right)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><text x="12" y="16" font-size="8" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">10</text></svg>
+            </button>
+
+            <!-- Inline Time Readout like Screenshots -->
+            <div class="player-time-inline">
+              <span id="player-cur-time">00:00</span>
+              <span class="time-sep">/</span>
+              <span id="player-total-time">00:00</span>
+            </div>
+          </div>
+
+          <div class="ctrls-right">
+            <!-- Volume Control -->
+            <div class="vol-control-wrap">
+              <button type="button" id="ctrl-volume" class="player-ctrl-btn" title="Mute / Unmute">
+                <svg id="vol-icon-high" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <svg id="vol-icon-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+              </button>
+              <input type="range" id="vol-slider" class="vol-slider" min="0" max="1" step="0.05" value="1" title="Volume">
+            </div>
+
+            <!-- Fullscreen Button -->
+            <button type="button" id="ctrl-fullscreen" class="player-ctrl-btn" title="Toggle Fullscreen">
+              <svg id="fs-icon-enter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              <svg id="fs-icon-exit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="display:none"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+            </button>
+
+            <!-- More Options ⋮ Button -->
+            <div class="player-more-wrap">
+              <button type="button" id="ctrl-more" class="player-ctrl-btn" title="More options">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+              </button>
+
+              <!-- More Options Dropup Menu (Matches Screenshot 3) -->
+              <div id="player-more-menu" class="player-more-menu" style="display:none">
+                <button type="button" class="menu-item" id="opt-download">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Download</span>
+                </button>
+                <button type="button" class="menu-item" id="opt-speed">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span>Playback speed: <strong id="speed-label">Normal</strong></span>
+                </button>
+                <button type="button" class="menu-item" id="opt-pip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="12" y="9" width="8" height="6" rx="1"/></svg>
+                  <span>Picture in picture</span>
+                </button>
+                <button type="button" class="menu-item" id="opt-aspect">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="3" x2="7" y2="5"/><line x1="17" y1="3" x2="17" y2="5"/></svg>
+                  <span>Aspect ratio: <strong id="aspect-label">Fit</strong></span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

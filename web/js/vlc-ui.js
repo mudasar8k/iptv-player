@@ -480,6 +480,166 @@
     });
   }
 
+  var scrubBuffer = document.getElementById('player-scrub-buffer');
+  var ctrlVolume = document.getElementById('ctrl-volume');
+  var volSlider = document.getElementById('vol-slider');
+  var volIconHigh = document.getElementById('vol-icon-high');
+  var volIconMute = document.getElementById('vol-icon-mute');
+  var ctrlFullscreen = document.getElementById('ctrl-fullscreen');
+  var fsIconEnter = document.getElementById('fs-icon-enter');
+  var fsIconExit = document.getElementById('fs-icon-exit');
+  var ctrlMore = document.getElementById('ctrl-more');
+  var moreMenu = document.getElementById('player-more-menu');
+  var optDownload = document.getElementById('opt-download');
+  var optSpeed = document.getElementById('opt-speed');
+  var speedLabel = document.getElementById('speed-label');
+  var optPip = document.getElementById('opt-pip');
+  var optAspect = document.getElementById('opt-aspect');
+  var aspectLabel = document.getElementById('aspect-label');
+
+  // Direct Stream Download
+  if (optDownload) {
+    optDownload.addEventListener('click', function () {
+      if (!currentPlayback || !currentPlayback.directUrl) return;
+      var a = document.createElement('a');
+      a.href = currentPlayback.directUrl;
+      a.download = (currentPlayback.name || 'stream') + '.mp4';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (moreMenu) moreMenu.style.display = 'none';
+      showHud();
+    });
+  }
+
+  /* ── Volume & Mute Controls ── */
+  var lastVolume = 1;
+  function updateVolIcons(muted, val) {
+    var isMute = muted || val === 0;
+    if (volIconHigh) volIconHigh.style.display = isMute ? 'none' : 'block';
+    if (volIconMute) volIconMute.style.display = isMute ? 'block' : 'none';
+  }
+
+  if (volSlider) {
+    volSlider.addEventListener('input', function () {
+      if (!video) return;
+      var val = Number(this.value);
+      video.volume = val;
+      video.muted = (val === 0);
+      if (val > 0) lastVolume = val;
+      updateVolIcons(video.muted, val);
+      showHud();
+    });
+  }
+
+  if (ctrlVolume) {
+    ctrlVolume.addEventListener('click', function () {
+      if (!video) return;
+      video.muted = !video.muted;
+      if (video.muted) {
+        if (volSlider) volSlider.value = 0;
+      } else {
+        if (video.volume === 0) video.volume = lastVolume || 1;
+        if (volSlider) volSlider.value = video.volume;
+      }
+      updateVolIcons(video.muted, video.volume);
+      showHud();
+    });
+  }
+
+  /* ── Fullscreen Toggle ── */
+  function isFs() {
+    return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function updateFsIcon() {
+    var fs = isFs();
+    if (fsIconEnter) fsIconEnter.style.display = fs ? 'none' : 'block';
+    if (fsIconExit) fsIconExit.style.display = fs ? 'block' : 'none';
+  }
+
+  function toggleFullscreen() {
+    var target = playerScreen || document.documentElement;
+    if (!isFs()) {
+      if (target.requestFullscreen) { target.requestFullscreen().catch(function () {}); }
+      else if (target.webkitRequestFullscreen) { target.webkitRequestFullscreen(); }
+      else if (video && video.webkitEnterFullscreen) { video.webkitEnterFullscreen(); }
+    } else {
+      if (document.exitFullscreen) { document.exitFullscreen().catch(function () {}); }
+      else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+    }
+    showHud();
+  }
+
+  if (ctrlFullscreen) {
+    ctrlFullscreen.addEventListener('click', toggleFullscreen);
+  }
+  document.addEventListener('fullscreenchange', updateFsIcon);
+  document.addEventListener('webkitfullscreenchange', updateFsIcon);
+
+  /* ── More Options Dropup (Speed, PiP, Aspect) ── */
+  if (ctrlMore && moreMenu) {
+    ctrlMore.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isHidden = moreMenu.style.display === 'none';
+      moreMenu.style.display = isHidden ? 'flex' : 'none';
+      showHud();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (moreMenu && !moreMenu.contains(e.target) && e.target !== ctrlMore) {
+        moreMenu.style.display = 'none';
+      }
+    });
+  }
+
+  // Playback Speed
+  var speeds = [1.0, 1.25, 1.5, 2.0, 0.75];
+  var currentSpeedIdx = 0;
+  if (optSpeed) {
+    optSpeed.addEventListener('click', function () {
+      if (!video) return;
+      currentSpeedIdx = (currentSpeedIdx + 1) % speeds.length;
+      var newRate = speeds[currentSpeedIdx];
+      video.playbackRate = newRate;
+      if (speedLabel) speedLabel.textContent = newRate === 1.0 ? 'Normal' : (newRate + 'x');
+      showHud();
+    });
+  }
+
+  // Picture in Picture
+  if (optPip) {
+    optPip.addEventListener('click', async function () {
+      if (!video) return;
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture();
+        } else if (video.requestPictureInPicture) {
+          await video.requestPictureInPicture();
+        }
+      } catch (_) {}
+      showHud();
+    });
+  }
+
+  // Aspect Ratio Fit (Contain / Cover / Fill)
+  var aspects = [
+    { label: 'Fit', mode: 'contain' },
+    { label: 'Cover', mode: 'cover' },
+    { label: 'Stretch', mode: 'fill' }
+  ];
+  var aspectIdx = 0;
+  if (optAspect) {
+    optAspect.addEventListener('click', function () {
+      if (!video) return;
+      aspectIdx = (aspectIdx + 1) % aspects.length;
+      video.style.objectFit = aspects[aspectIdx].mode;
+      if (aspectLabel) aspectLabel.textContent = aspects[aspectIdx].label;
+      showHud();
+    });
+  }
+
   if (video) {
     video.addEventListener('timeupdate', function () {
       if (!video || !video.duration) return;
@@ -490,6 +650,12 @@
       var pct = dur > 0 ? (cur / dur) * 100 : 0;
       if (scrubFill) scrubFill.style.width = pct + '%';
       if (scrubThumb) scrubThumb.style.left = pct + '%';
+    });
+
+    video.addEventListener('progress', function () {
+      if (!video || !video.duration || !video.buffered.length || !scrubBuffer) return;
+      var end = video.buffered.end(video.buffered.length - 1);
+      scrubBuffer.style.width = (end / video.duration) * 100 + '%';
     });
 
     video.addEventListener('play', function () {
