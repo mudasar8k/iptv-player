@@ -240,8 +240,6 @@ if(!response.ok && response.status!==206) {
     for(const k of ['content-length','content-range'])if(response.headers.has(k))replyHeaders[k]=response.headers.get(k);
     res.writeHead(response.status,replyHeaders);
     if (!response.body) return res.end();
-    // Clear connection-timeout timer once streaming data is actively flowing!
-    clearTimeout(timer);
     Readable.fromWeb(response.body).on('error',()=>res.destroy()).pipe(res);
     res.on('close',()=>{if(!res.writableEnded)controller.abort();});
   } catch(e){
