@@ -29,10 +29,20 @@ function parseDestination(value,opts={}){
 }
 async function validateDestination(value,opts={}){
   const {url,hostname}=parseDestination(value,opts);
-  const addresses = net.isIP(hostname) ? [{address:hostname,family:net.isIP(hostname)}] : await dns.lookup(hostname,{all:true,verbatim:true});
-  if(!addresses.length || !addresses.every(x=>validPublicIp(x.address))) throw Error('Destination DNS/IP prohibited');
-  // This result is for auditing only. Connecting by hostname afterward is NOT safe:
-  // a hardened transport MUST use one of these validated addresses for the socket.
-  return {protocol:url.protocol,hostname,port:Number(url.port||(url.protocol==='https:'?443:80)),addresses:addresses.map(x=>x.address)};
+  let addresses = net.isIP(hostname) ? [{address:hostname,family:net.isIP(hostname)}] : await dns.lookup(hostname,{all:true,verbatim:true});
+  
+  // Filter for valid public IPv4 addresses (ignoring IPv6 / loopback)
+  const validIpv4s = addresses.filter(x => validPublicIp(x.address));
+  if(!validIpv4s.length) {
+    console.error('[validateDestination] No valid public IPv4 address for host:', hostname, 'resolved addresses:', addresses);
+    throw Error('Destination DNS/IP prohibited');
+  }
+  
+  return {
+    protocol:url.protocol,
+    hostname,
+    port:Number(url.port||(url.protocol==='https:'?443:80)),
+    addresses:validIpv4s.map(x=>x.address)
+  };
 }
 module.exports={validPublicIp,parseDestination,validateDestination};
