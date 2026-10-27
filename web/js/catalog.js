@@ -404,7 +404,10 @@
       renderLayout(catData.categories || []);
 
     } catch (e) {
-      container.innerHTML = '<p class="catalog-message">Error: ' + e.message + '</p>';
+      container.innerHTML = '<div style="padding:48px 32px;display:flex;flex-direction:column;align-items:flex-start;gap:16px;">' +
+        '<p class="catalog-message" style="margin:0;color:#ff6b81;">Could not load categories: ' + e.message + '</p>' +
+        '<button type="button" class="back-btn" onclick="window.VLCLoadCategories && window.VLCLoadCategories(\'' + section + '\')">↻ Retry Loading</button>' +
+        '</div>';
     }
   };
 }());

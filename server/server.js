@@ -43,7 +43,16 @@ function decryptSecret(secret) {
   ]).toString('utf8');
 }
 
+// In-memory 15-minute category cache per account + action to eliminate upstream provider stalls
+const categoryCache = new Map();
+
 async function xtreamCategories(account, action) {
+  const cacheKey = `${account.id}_${action}`;
+  const cached = categoryCache.get(cacheKey);
+  if (cached && (Date.now() - cached.ts < 15 * 60 * 1000)) {
+    return cached.data;
+  }
+
   const endpoint = new URL(
     account.host.replace(/\/+$/, '') + '/player_api.php'
   );
@@ -52,21 +61,24 @@ async function xtreamCategories(account, action) {
   endpoint.searchParams.set('action', action);
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 25000);
 
   try {
     const response = await secureFetch(endpoint, {
       method: 'GET',
       redirect: 'error',
       signal: controller.signal,
-      headers: { 'Accept': 'application/json' }
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'VLC/3.0.18 LibVLC/3.0.18'
+      }
     });
 
-    if (!response.ok) throw Error('Provider request failed');
+    if (!response.ok) throw Error(`Provider request failed with HTTP ${response.status}`);
 
     const chunks = [];
     let size = 0;
-    const maxBytes = 2 * 1024 * 1024;
+    const maxBytes = 10 * 1024 * 1024; // 10MB limit (some large providers have massive category lists)
     for await (const chunk of response.body) {
       size += chunk.length;
       if (size > maxBytes) throw Error('Provider response too large');
@@ -74,12 +86,23 @@ async function xtreamCategories(account, action) {
     }
 
     const result = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    if (!Array.isArray(result)) throw Error('Unexpected provider response');
+    if (!Array.isArray(result)) throw Error('Unexpected provider response format (not array)');
 
-    return result.slice(0, 3000).map(item => ({
+    const list = result.slice(0, 3000).map(item => ({
       category_id: String(item.category_id || ''),
       category_name: String(item.category_name || '')
     }));
+
+    categoryCache.set(cacheKey, { ts: Date.now(), data: list });
+    return list;
+  } catch (err) {
+    console.error(`[XtreamCategories] Failed for action=${action}:`, err.message || err);
+    // If upstream timed out but we have a stale cache, return stale cache instead of failing!
+    if (cached && cached.data) {
+      console.warn(`[XtreamCategories] Serving stale cache for action=${action}`);
+      return cached.data;
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
