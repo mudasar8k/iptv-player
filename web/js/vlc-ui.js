@@ -642,8 +642,22 @@
 
   function togglePlayPause() {
     if (!video) return;
+    var errEl = document.getElementById('player-error');
     if (video.paused) {
-      video.play().catch(function () {});
+      if (errEl) errEl.textContent = '';
+      var playPromise = video.play();
+      if (playPromise && playPromise.catch) {
+        playPromise.catch(function (err) {
+          console.warn('[Player] play() rejected:', err);
+          // If socket stalled during long pause, reloading the current position resumes seamlessly
+          if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE || (err && err.name === 'NotSupportedError')) {
+            var curTime = video.currentTime || 0;
+            video.load();
+            video.currentTime = curTime;
+            video.play().catch(function () {});
+          }
+        });
+      }
       if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'none';
       if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'block';
       flashCenterGlyph(true);
@@ -1377,6 +1391,13 @@
       if (currentPlayback && video.currentTime > 10) {
         recordProgress(currentPlayback, video.currentTime, video.duration);
       }
+    });
+
+    video.addEventListener('playing', function () {
+      var errEl = document.getElementById('player-error');
+      if (errEl) errEl.textContent = '';
+      if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'none';
+      if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'block';
     });
 
     video.addEventListener('error', function () {

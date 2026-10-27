@@ -5,7 +5,8 @@ const net = require('node:net');
 const {Readable} = require('node:stream');
 const {validPublicIp} = require('./security/destination-policy');
 const sessions = new Map();
-const TTL = 15 * 60 * 1000;
+// 24 hours TTL: Users can pause movie/series for hours without session dropping or expiring
+const TTL = 24 * 60 * 60 * 1000;
 function err(res,status,message){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify({error:message}));}
 function allowed(u,root){return u.origin===root.origin && ['http:','https:'].includes(u.protocol) && !u.username && !u.password;}
 function createPath(account,section,id,decrypt,movieExtension){
@@ -332,6 +333,8 @@ async function handle(req,res,url,ctx){
   if(req.method==='GET' && m){
     const s=sessions.get(m[1]);
     if(!s || s.expires<Date.now()){sessions.delete(m[1]);return err(res,401,'Playback session expired');}
+    // Refresh session expiry sliding window so active/paused playback never expires
+    s.expires = Date.now() + TTL;
     const device=ctx.db.devices.find(d=>d.id===s.deviceId);
     if(!device || device.permissions[s.section]!==true || !device.accounts.includes(s.accountId))return err(res,403,'Playback revoked');
     const resource=s.resources.get(m[2]);if(!resource)return err(res,404,'Media resource not found');

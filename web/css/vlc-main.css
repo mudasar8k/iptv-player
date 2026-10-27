@@ -1490,6 +1490,36 @@ a { color: inherit; text-decoration: none; }
   .hdr-status { display: none; }
 }
 
+/* ── Player Error & Status Overlay ── */
+.player-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 120;
+  max-width: 480px;
+  width: 90%;
+  margin: 0;
+  padding: 16px 24px;
+  background: rgba(14, 8, 28, 0.92);
+  border: 1px solid rgba(160, 120, 255, 0.28);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.5;
+  pointer-events: none;
+  display: none;
+  animation: fadeIn 0.2s ease-out;
+}
+.player-error:not(:empty) {
+  display: block;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }

@@ -53,6 +53,8 @@ async function handle(req, res, url, sessions, ctx) {
   const sess = sessions.get(match[1]);
   if (!authorized(sess, ctx)) return failure(res, 403, 'Playback expired or not authorized');
   if (!sess.resources.has(match[2])) return failure(res, 404, 'Unknown media resource');
+  // Refresh session expiry sliding window so audio transcoder never drops during long pauses
+  sess.expires = Date.now() + (24 * 60 * 60 * 1000);
 
   if (active.size >= MAX_ACTIVE) return failure(res, 429, 'Maximum concurrent audio transcode sessions reached');
 
