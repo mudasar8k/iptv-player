@@ -974,6 +974,126 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════
+   PREMIUM RESUME PLAYBACK DIALOG (10-Foot TV Experience)
+═══════════════════════════════════════════════════════════ */
+.player-resume-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 32px;
+  background: rgba(16, 10, 32, 0.94);
+  border: 1.5px solid rgba(196, 126, 255, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.85), 0 0 32px rgba(155, 71, 240, 0.35);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  max-width: 90vw;
+  animation: resumePopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes resumePopIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.resume-icon-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(155, 71, 240, 0.2);
+  border: 1.5px solid rgba(196, 126, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c47eff;
+  flex-shrink: 0;
+  box-shadow: 0 0 20px rgba(155, 71, 240, 0.4);
+}
+
+.resume-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.resume-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.resume-time {
+  font-size: 14px;
+  font-weight: 500;
+  color: #c47eff;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.resume-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 12px;
+}
+
+.resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.resume-btn--primary {
+  background: linear-gradient(135deg, #9b47f0, #7323c9);
+  color: #fff;
+  border: 1.5px solid #c47eff;
+  box-shadow: 0 6px 20px rgba(155, 71, 240, 0.5);
+}
+.resume-btn--primary:hover,
+.resume-btn--primary:focus-visible {
+  background: linear-gradient(135deg, #aa5ff7, #842edf);
+  transform: scale(1.05);
+  box-shadow: 0 8px 28px rgba(196, 126, 255, 0.7);
+  outline: none;
+}
+
+.resume-btn--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-2);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+}
+.resume-btn--secondary:hover,
+.resume-btn--secondary:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+  outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
    PAIRING / INVITATION OVERLAY
 ═══════════════════════════════════════════════════════════ */
 #pair-cover {

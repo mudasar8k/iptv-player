@@ -201,15 +201,24 @@
         </div>
       </div>
 
-      <!-- Floating Resume Prompt Banner -->
+      <!-- Floating Modern Resume Prompt Modal -->
       <div id="player-resume-prompt" class="player-resume-card" style="display:none">
+        <div class="resume-icon-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
         <div class="resume-info">
-          <p class="resume-title">Resume playback?</p>
-          <p class="resume-time" id="resume-time-text">Continue from 00:00:00</p>
+          <p class="resume-title">Resume Playback?</p>
+          <p class="resume-time" id="resume-time-text">You were watching at 00:00</p>
         </div>
         <div class="resume-actions">
-          <button type="button" id="resume-btn-yes" class="resume-btn resume-btn--primary">Resume</button>
-          <button type="button" id="resume-btn-no" class="resume-btn resume-btn--secondary">Start Over</button>
+          <button type="button" id="resume-btn-yes" class="resume-btn resume-btn--primary">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            Resume
+          </button>
+          <button type="button" id="resume-btn-no" class="resume-btn resume-btn--secondary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Start Over
+          </button>
         </div>
       </div>
 
