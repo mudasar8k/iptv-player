@@ -1,0 +1,70 @@
+/* Phase 9B dashboard. Scoped to Home only; player and catalog untouched. */
+#home{padding-top:18px!important}#home .hero[hidden]{display:none!important}
+#p9b-dashboard{display:flex;flex-direction:column;gap:30px;max-width:1600px;margin:0 auto}
+.p9b-navigation{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0 9px;border-bottom:1px solid rgba(195,145,235,.17)}
+#home .p9b-navigation .tile{display:flex!important;flex-direction:row;align-items:center;justify-content:center;min-height:48px!important;width:auto;min-width:130px;margin:0;padding:12px 19px!important;border-radius:12px!important;font-size:15px!important;font-weight:700;background:transparent!important;border:1px solid transparent!important;box-shadow:none!important;gap:10px;transform:none!important}
+#home .p9b-navigation .tile:first-child{background:rgba(157,78,224,.2)!important;border-color:rgba(209,153,255,.38)!important}
+#home .p9b-navigation .tile:before{display:none}#home .p9b-navigation .tile .tile-symbol{font-size:19px!important;line-height:1}#home .p9b-navigation .tile small{display:none}
+#home .p9b-navigation .tile:hover,#home .p9b-navigation .tile:focus-visible{background:rgba(139,63,208,.3)!important;border-color:#d8a1fc!important;outline:3px solid #dba9ff;outline-offset:2px}
+.p9b-feature{min-height:360px;display:grid;grid-template-columns:1.2fr .8fr;position:relative;overflow:hidden;border-radius:27px;border:1px solid rgba(207,160,246,.23);background:radial-gradient(ellipse at 90% 20%,rgba(164,61,234,.36),transparent 48%),linear-gradient(120deg,#211035 2%,#170f25 55%,#0f0c1a);box-shadow:0 25px 70px rgba(0,0,0,.2)}
+.p9b-feature-copy{z-index:1;padding:clamp(30px,4.5vw,68px);display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px}
+.p9b-overline{font-size:11px;font-weight:800;letter-spacing:.24em;color:#d79cff;margin:0}
+.p9b-feature h2{font-size:clamp(34px,4.2vw,64px);line-height:1.06;letter-spacing:-.055em;max-width:12ch;margin:0;font-weight:800}
+.p9b-feature-copy>p:not(.p9b-overline){max-width:55ch;color:#d5c7e2;line-height:1.6;font-size:clamp(14px,1.2vw,18px);margin:0}
+.p9b-primary{border:0;border-radius:11px;background:#b55cf3;color:#180e22;font-weight:800;font-size:15px;padding:13px 22px;min-height:48px;cursor:pointer}.p9b-primary:hover{background:#d398ff}.p9b-primary:focus-visible{outline:3px solid white;outline-offset:3px}
+.p9b-feature-art{position:relative;overflow:hidden;min-height:300px}.p9b-glow{position:absolute;border-radius:50%;filter:blur(2px)}.p9b-glow-a{width:350px;height:350px;right:8%;top:-60px;background:radial-gradient(circle at 34% 35%,#b964ed,#50226e 44%,transparent 72%)}.p9b-glow-b{width:330px;height:330px;bottom:-165px;right:-60px;background:radial-gradient(circle,#702f9e,transparent 70%)}.p9b-orb{position:absolute;top:50%;left:48%;transform:translate(-50%,-50%);display:grid;place-items:center;width:145px;height:145px;border:1px solid #c78cf9;border-radius:37px;background:linear-gradient(145deg,rgba(184,89,247,.63),rgba(75,29,129,.74));font-size:69px;color:#f4dfff;box-shadow:0 30px 85px rgba(166,71,248,.36);padding-left:7px}
+.p9b-library{display:grid;gap:27px}.p9b-row{min-width:0}.p9b-row-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.p9b-row-heading h2{font-size:clamp(21px,2.3vw,30px);margin:0;letter-spacing:-.035em}.p9b-viewall{color:#d5a4ff;border:0;background:transparent;padding:10px;min-height:44px;cursor:pointer;font-size:14px}.p9b-poster-row{display:flex;overflow-x:auto;gap:16px;padding:5px 3px 18px;scroll-snap-type:x proximity;scrollbar-color:#7f4aad #1e1528}.p9b-poster{flex:0 0 clamp(135px,13vw,190px);text-align:left;cursor:pointer;background:transparent;border:1px solid transparent;border-radius:13px;padding:0;color:#f9f2ff;scroll-snap-align:start;overflow:visible}.p9b-poster-image{display:flex;align-items:center;justify-content:center;aspect-ratio:2/3;border:1px solid rgba(194,135,234,.28);border-radius:12px;overflow:hidden;background:linear-gradient(150deg,#52247e,#24132f 65%,#120d1b)}.p9b-poster-image:empty:after{content:'▶';font-size:43px;color:#b475e7}.p9b-poster-image img{width:100%;height:100%;object-fit:cover}.p9b-poster-title{display:block;padding:9px 4px 2px;font-size:14px;font-weight:700;line-height:1.4;min-height:48px;overflow-wrap:anywhere}.p9b-poster:hover .p9b-poster-image,.p9b-poster:focus-visible .p9b-poster-image{outline:3px solid #dcb0ff;outline-offset:2px}.p9b-poster:focus-visible{outline:none}.p9b-status{color:#c7b7d5;min-height:90px;padding:16px;margin:0}#home .hint{margin:18px auto 0;max-width:1600px;font-size:12px;color:#aa9cb8}
+@media(max-width:800px){.p9b-feature{grid-template-columns:1fr;min-height:auto}.p9b-feature-art{position:absolute;inset:0 0 0 50%;opacity:.22;pointer-events:none}.p9b-feature-copy{padding:35px 26px}.p9b-feature h2{font-size:38px}.p9b-navigation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}#home .p9b-navigation .tile{min-width:0;padding:11px!important}.p9b-poster{flex-basis:142px}}
+@media(prefers-reduced-motion:reduce){.p9b-poster-row{scroll-behavior:auto}}
+
+/* Phase 9C enhancement. Limited to existing dashboard, catalog, series, player. */
+#p9b-dashboard .p9b-feature{min-height:340px;grid-template-columns:minmax(0,1fr) minmax(230px,.75fr)}
+#p9b-dashboard .p9b-feature-copy{padding:clamp(28px,4vw,56px)}
+#p9b-dashboard .p9b-feature h2{font-size:clamp(30px,3.7vw,56px);max-width:18ch;overflow-wrap:anywhere}
+#p9b-dashboard .p9b-feature-art.p9c-feature-image{background:#1b1227}
+#p9b-dashboard .p9c-feature-image img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 29%;opacity:.82;mask-image:linear-gradient(90deg,transparent 0%,#000 32%)}
+#p9b-dashboard .p9c-feature-image .p9b-orb,#p9b-dashboard .p9c-feature-image .p9b-glow{display:none}
+#p9b-dashboard .p9b-poster-row{padding-bottom:22px;gap:18px}
+#p9b-dashboard .p9b-poster-image{box-shadow:0 15px 32px rgba(0,0,0,.23)}
+#p9b-dashboard .p9b-poster-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#section .catalog-grid.catalog-items .catalog-card img{width:100%;height:auto;aspect-ratio:2/3;object-fit:cover;border-radius:9px;display:block;margin-bottom:11px}
+#section .catalog-grid.catalog-items .catalog-card{overflow:hidden;text-align:left;min-width:0}
+#section .catalog-grid.catalog-items .catalog-card span{display:block;overflow-wrap:anywhere}
+#section select,#section .catalog-more{min-height:44px}
+#player h1{font-size:clamp(22px,2.7vw,36px)!important;line-height:1.2!important;margin:12px 0 20px!important}
+#player video{display:block;max-height:min(73vh,820px);width:100%;object-fit:contain;background:#000;border-radius:14px}
+#player{padding-bottom:36px}
+@media(max-width:750px){#p9b-dashboard .p9b-feature{grid-template-columns:1fr}#p9b-dashboard .p9c-feature-image img{opacity:.23;mask-image:none}#p9b-dashboard .p9b-feature-copy{position:relative;z-index:2}}
+
+/* Phase 9D display refinements: player and artwork. */
+#p9b-dashboard .p9b-feature-art.p9d-has-artwork { position:relative; overflow:hidden; }
+#p9b-dashboard .p9b-feature-art.p9d-has-artwork .p9d-art-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 28%; opacity:.72; }
+#p9b-dashboard .p9b-feature-art.p9d-has-artwork .p9b-orb { display:none; }
+#p9b-dashboard .p9b-feature-art.p9d-has-artwork:after {content:'';pointer-events:none;position:absolute;inset:0;background:linear-gradient(90deg,rgba(16,8,30,.6),transparent 70%);}
+#p9b-dashboard .p9b-poster-image.p9d-no-art { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:8px; background:linear-gradient(145deg,#351449,#110b23); }
+#p9b-dashboard .p9d-placeholder { max-width:85%; font-size:12px; line-height:1.35; text-align:center; letter-spacing:.03em; color:#e0caef; }
+#player { max-width:1600px; margin-inline:auto; }
+#player h1 {font-size:clamp(22px,3vw,36px);line-height:1.25;max-width:100%;overflow-wrap:anywhere;margin-block:12px 20px;}
+#player video { display:block; width:100%; max-height:min(76vh,950px); object-fit:contain; background:#000; border-radius:12px; }
+#player .back { margin-bottom:8px; }
+@media (max-width:640px) { #player video {max-height:70vh;border-radius:6px;} #player h1 {font-size:22px;} }
+
+/* Phase 9E: same visual identity for desktop and LG webOS browser. */
+#p9b-dashboard, #section, #player { box-sizing:border-box; }
+#p9b-dashboard .p9b-navigation .tile,
+#p9b-dashboard .p9b-primary,
+#p9b-dashboard .p9b-viewall,
+#p9b-dashboard .p9b-poster { -webkit-tap-highlight-color:transparent; }
+#p9b-dashboard .p9b-primary:focus-visible,
+#p9b-dashboard .p9b-viewall:focus-visible,
+#p9b-dashboard .p9b-navigation .tile:focus-visible { outline:3px solid #e0adff;outline-offset:3px; }
+/* TV browsers commonly have a wide viewport: preserve two-column hero and desktop rows. */
+@media (min-width:801px) {
+  #p9b-dashboard .p9b-feature { grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); }
+  #p9b-dashboard .p9b-feature-copy { min-width:0; }
+  #p9b-dashboard .p9b-navigation { display:flex;flex-wrap:wrap; }
+}
+@media (max-width:800px) {
+  /* Same fonts/colors/controls; only stack content on genuinely narrow screens. */
+  #p9b-dashboard .p9b-feature { grid-template-columns:1fr; }
+}

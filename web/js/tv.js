@@ -36,7 +36,7 @@
     // On Home, leave system Back behavior to webOS (no forced application exit).
   }
   function openPlayer(url) {
-    if (!url || !/^https?:\/\//i.test(url)) return;
+    if (!url || !(/^(https?:\/\/|\/api\/play\/media\/)/i.test(url))) return;
     previous = current;
     screen('player');
     video.src = url;
@@ -79,6 +79,32 @@
   backSection.addEventListener('click',goBack);
   backPlayer.addEventListener('click',goBack);
   video.addEventListener('error', function () {document.getElementById('player-error').textContent='This stream/container/codec is not supported or could not be reached.';});
+  window.VLCPlayItem = async function(section,accountId,itemId,name,seriesId){
+    var message=document.getElementById('player-error');
+    if (message) message.textContent='Preparing '+name+'...';
+    try {
+      var token=localStorage.getItem('vlc_device_token_v1');
+      if(!token)throw Error('Device not paired');
+      var response=await fetch('/api/play/start',{
+        method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+        body:JSON.stringify({section:section,accountId:accountId,itemId:itemId,seriesId:seriesId})
+      });
+      var data=await response.json();
+      if(!response.ok)throw Error(data.error||'Playback not available');
+      if (message) message.textContent='';
+      openPlayer(data.url);
+    } catch(e) {
+      var sectionMessage=document.getElementById('vlc-item-message');
+      if(!sectionMessage) {
+        sectionMessage=document.createElement('p');
+        sectionMessage.id='vlc-item-message';
+        sectionMessage.setAttribute('role','alert');
+        var playerPanel=document.getElementById('vlc-catalog');
+        if(playerPanel)playerPanel.prepend(sectionMessage);
+      }
+      if(sectionMessage)sectionMessage.textContent='Playback unavailable: '+e.message;
+    }
+  };
   window.VLCTV = { openPlayer:openPlayer, openSection:openSection, goBack:goBack };
   focusFirst();
 }());

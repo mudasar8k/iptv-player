@@ -54,6 +54,44 @@
     }
   }
 
+  function renderFavoritesGrid(favs) {
+    selectedCategory = { category_name: '⭐ My Favorites' };
+    container.replaceChildren();
+    var count = element('p', '⭐ Favorites - ' + favs.length + ' items', 'catalog-count');
+    container.appendChild(count);
+    var back = element('button', 'Back to categories', 'catalog-more');
+    back.addEventListener('click', function () { window.VLCCatalogBack(); });
+    container.appendChild(back);
+    var grid = element('div', undefined, 'catalog-grid');
+    grid.className += ' catalog-items';
+    container.appendChild(grid);
+    favs.forEach(function (fav) {
+      var card = element('button', undefined, 'catalog-card catalog-item');
+      card.type = 'button';
+      if (fav.image && /^https?:\/\//i.test(fav.image)) {
+        var img = document.createElement('img');
+        img.src = fav.image;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = function () { img.remove(); };
+        card.appendChild(img);
+      }
+      card.appendChild(element('span', fav.name));
+      card.addEventListener('click', function () {
+        if (fav.section === 'series') {
+          if (window.VLCSeriesOpen) {
+            window.VLCSeriesOpen(fav.accountId, { id: fav.itemId, name: fav.name, image: fav.image }, container, function () { renderFavoritesGrid(favs); });
+            return;
+          }
+        }
+        if (window.VLCPlayItem) window.VLCPlayItem(fav.section, fav.accountId, fav.itemId, fav.name, fav.seriesId);
+      });
+      grid.appendChild(card);
+    });
+    back.focus();
+  }
+
   function render(categories) {
     container.replaceChildren();
 
@@ -66,6 +104,22 @@
     var grid = element('div',undefined,'catalog-grid');
     grid.id = 'vlc-category-grid';
     container.appendChild(grid);
+
+    if (window.VLCFavoritesList && window.VLCFavoritesList.length) {
+      var favs = window.VLCFavoritesList.filter(function (f) { return f.section === state.section; });
+      if (favs.length) {
+        var favBtn = element('button', '⭐ Favorites (' + favs.length + ')', 'catalog-card');
+        favBtn.type = 'button';
+        favBtn.style.borderColor = 'rgba(255, 215, 0, 0.4)';
+        favBtn.style.background = 'rgba(255, 215, 0, 0.12)';
+        favBtn.style.color = '#ffd700';
+        favBtn.style.fontWeight = '700';
+        favBtn.addEventListener('click', function () {
+          renderFavoritesGrid(favs);
+        });
+        grid.appendChild(favBtn);
+      }
+    }
 
     container.appendChild(
       element('p','Select a category to continue.','catalog-selected')
@@ -108,9 +162,9 @@
       if(!response.ok)throw Error(data.error||'Could not load content');
       if(state.section!==section || selectedCategory!==category)return;
       container.replaceChildren();
-      var count=element('p',category.category_name+' â€” '+data.items.length+' items'+(data.limited?' (showing first 1200)':''),'catalog-count');
+      var count=element('p',category.category_name+' - '+data.items.length+' items'+(data.limited?' (showing first 1200)':''),'catalog-count');
       container.appendChild(count);
-      var back=element('button','â† Back to categories','catalog-more');
+      var back=element('button','Back to categories','catalog-more');
       back.addEventListener('click',function(){window.VLCCatalogBack();});
       container.appendChild(back);
       var grid=element('div',undefined,'catalog-grid');grid.className+=' catalog-items';
@@ -124,9 +178,13 @@
         }
         card.appendChild(element('span',item.name));
         card.addEventListener('click',function(){
-          var note=document.getElementById('vlc-item-message');
-          if(!note){note=element('p',undefined,'catalog-selected');note.id='vlc-item-message';container.insertBefore(note,grid);}
-          note.textContent='Selected: '+item.name+'. Playback integration is the next phase.';
+          if(state.section==='series'){
+            var note=document.getElementById('vlc-item-message');
+            if(!note){note=element('p',undefined,'catalog-selected');note.id='vlc-item-message';container.insertBefore(note,grid);}
+            if (window.VLCSeriesOpen) window.VLCSeriesOpen(state.accountId,item,container,function(){loadItems(category,index);});
+            return;
+          }
+          if (window.VLCPlayItem) window.VLCPlayItem(state.section, state.accountId, item.id, item.name, undefined, item.image);
         });
         grid.appendChild(card);
       });

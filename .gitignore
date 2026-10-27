@@ -1,4 +1,4 @@
-﻿node_modules/
+node_modules/
 *.asar
 *.asar.unpacked/
 *.log
@@ -63,3 +63,17 @@ Thumbs.db
 
 # Local development archives
 /VLC-IPTV-*.zip
+
+# Local FFmpeg diagnostic tools
+/tools/ffmpeg/
+
+# Local playback diagnostics
+/diagnostics/
+
+# Temporary setup scripts and archives
+*.ps1
+deploy-vlc-update.tar.gz
+iptv-audio-compat-pilot/
+/pairing.js
+/pairing.css
+

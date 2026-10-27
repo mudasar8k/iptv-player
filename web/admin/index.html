@@ -1,3 +1,398 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VLC IPTV · Admin</title><style>body{font:16px Arial,sans-serif;background:#100c1e;color:#eee;margin:24px auto;max-width:950px;padding:0 20px}h1{color:#cdb5ff}section{background:#211934;border:1px solid #453267;border-radius:14px;padding:20px;margin:18px 0}input,select,button{padding:10px;margin:5px;background:#130f25;color:white;border:1px solid #7459a0;border-radius:7px}button{background:#673cb9;cursor:pointer}label{display:inline-block;margin:8px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #524267;text-align:left}small{color:#aaa}#msg{white-space:pre-wrap;color:#eacbff}</style></head><body><h1>VLC IPTV · Central Admin</h1><p><small>Local development prototype · Do not expose to the Internet yet</small></p><section><h2>Admin access</h2><input type="password" id="key" placeholder="VLC_ADMIN_KEY" size="42"><button id="connect">Connect</button><p id="msg"></p></section><section><h2>Add Xtream subscription</h2><form id="add"><input name="label" placeholder="Account label" required><input name="host" placeholder="https://provider.example:port" required><input name="username" placeholder="Username" required><input name="password" type="password" placeholder="Password" required><button>Add securely</button></form><h3>Accounts</h3><div id="accounts">Connect first</div></section><section><h2>Pending pairing codes</h2><div id="pending"></div><h2>Approved devices</h2><div id="devices"></div></section><script>
-(function(){'use strict';var key='',state=null;var $=function(id){return document.getElementById(id);};function say(s){$('msg').textContent=s;}function el(tag,text){var x=document.createElement(tag);x.textContent=text||'';return x;}async function call(path,data){var r=await fetch(path,{method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:data?JSON.stringify(data):undefined});var v=await r.json();if(!r.ok)throw Error(v.error||'Request failed');return v;}function checkBox(name,checked){var l=el('label');var c=document.createElement('input');c.type='checkbox';c.checked=checked;l.appendChild(c);l.appendChild(document.createTextNode(name));return {label:l,input:c};}function accountPicker(selected){var s=document.createElement('select');s.multiple=true;s.size=Math.max(2,Math.min(6,state.accounts.length));state.accounts.forEach(function(a){var o=document.createElement('option');o.value=a.id;o.textContent=a.label;o.selected=(selected||[]).indexOf(a.id)!==-1;s.appendChild(o);});return s;}function chosen(s){return Array.from(s.options).filter(function(o){return o.selected;}).map(function(o){return o.value;});}async function refresh(){state=await call('/api/admin/state');$('accounts').replaceChildren();state.accounts.forEach(function(a){$('accounts').appendChild(el('p',a.label+' · '+a.host+' · '+a.username));});$('pending').replaceChildren();state.pending.forEach(function(p){var wrap=el('div');wrap.appendChild(el('strong',p.name+' ('+p.platform+') code: '+p.code+' '));var sel=accountPicker([]);wrap.appendChild(sel);var live=checkBox('Live',true),movies=checkBox('Movies',true),series=checkBox('Series',true);[live,movies,series].forEach(function(c){wrap.appendChild(c.label);});var b=el('button','Approve');b.onclick=async function(){try{await call('/api/admin/pair/approve',{code:p.code,accounts:chosen(sel),live:live.input.checked,movies:movies.input.checked,series:series.input.checked});await refresh();}catch(e){say(e.message);}};wrap.appendChild(b);$('pending').appendChild(wrap);});$('devices').replaceChildren();state.devices.forEach(function(d){var wrap=el('div');wrap.appendChild(el('h3',d.name+' ('+d.platform+')'));var sel=accountPicker(d.accounts);wrap.appendChild(sel);var live=checkBox('Live',d.permissions.live),movies=checkBox('Movies',d.permissions.movies),series=checkBox('Series',d.permissions.series);[live,movies,series].forEach(function(c){wrap.appendChild(c.label);});var save=el('button','Save access');save.onclick=async function(){try{await call('/api/admin/devices/assign',{deviceId:d.id,accounts:chosen(sel),live:live.input.checked,movies:movies.input.checked,series:series.input.checked});say('Access saved');await refresh();}catch(e){say(e.message);}};wrap.appendChild(save);var revoke=el('button','Revoke device');revoke.onclick=async function(){if(!confirm('Revoke this device?'))return;await call('/api/admin/devices/revoke',{deviceId:d.id});await refresh();};wrap.appendChild(revoke);$('devices').appendChild(wrap);});} $('connect').onclick=async function(){key=$('key').value;try{await refresh();say('Connected.');}catch(e){say(e.message);}};$('add').onsubmit=async function(e){e.preventDefault();var f=new FormData(this);try{await call('/api/admin/accounts',Object.fromEntries(f.entries()));this.reset();say('Account saved encrypted at rest.');await refresh();}catch(err){say(err.message);}};setInterval(function(){if(key)refresh().catch(function(){});},15000);})();
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>VLC IPTV · Admin</title><style>body{font:16px Arial,sans-serif;background:#100c1e;color:#eee;margin:24px auto;max-width:950px;padding:0 20px}h1{color:#cdb5ff}section{background:#211934;border:1px solid #453267;border-radius:14px;padding:20px;margin:18px 0}input,select,button{padding:10px;margin:5px;background:#130f25;color:white;border:1px solid #7459a0;border-radius:7px}button{background:#673cb9;cursor:pointer}label{display:inline-block;margin:8px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #524267;text-align:left}small{color:#aaa}#msg{white-space:pre-wrap;color:#eacbff}</style></head><body><h1>VLC IPTV · Central Admin</h1><p><small>Local development prototype · Do not expose to the Internet yet</small></p><section><h2>Admin access</h2><input type="password" id="key" placeholder="VLC_ADMIN_KEY" size="42"><button id="connect">Connect</button><p id="msg"></p></section><section><h2>Add Xtream subscription</h2><form id="add"><input name="label" placeholder="Account label" required><input name="host" placeholder="https://provider.example:port" required><input name="username" placeholder="Username" required><input name="password" type="password" placeholder="Password" required><button>Add securely</button></form><h3>Accounts</h3><div id="accounts">Connect first</div></section>
+<section id="invite-panel">
+<h2>Register a New Device</h2>
+<p>Create an invitation before the person opens the TV website.</p>
+<form id="invite-form">
+<input name="ownerName" placeholder="Person name" required maxlength="100">
+<input name="deviceName" placeholder="Device name" required maxlength="80">
+<input name="location" placeholder="Location" required maxlength="120">
+<select name="deviceType" required>
+<option value="">Device type</option>
+<option>TV</option><option>Mobile</option>
+<option>Laptop</option><option>Desktop</option>
+<option>Tablet</option><option>Other</option>
+</select>
+<label>Subscription <select id="invite-account" required></select></label>
+<label><input type="checkbox" name="live" checked>Live</label>
+<label><input type="checkbox" name="movies" checked>Movies</label>
+<label><input type="checkbox" name="series" checked>Series</label>
+<button type="submit">Generate Invitation</button>
+</form>
+<p id="invite-result" aria-live="polite"></p>
+</section>
+<section><h2>Pending pairing codes</h2><div id="pending"></div><h2>Approved devices</h2><div id="devices"></div></section><script>
+(function(){'use strict';var key='',state=null,csrf='';var $=function(id){return document.getElementById(id);};function say(s){$('msg').textContent=s;}function el(tag,text){var x=document.createElement(tag);x.textContent=text||'';return x;}async function call(path,data){
+ var headers={'Content-Type':'application/json'};
+ if(csrf) headers['X-IPTV-CSRF']=csrf;
+ if(key) headers['Authorization']='Bearer '+key;
+ var r=await fetch(path,{
+   method:data?'POST':'GET',
+   credentials:'same-origin',
+   cache:'no-store',
+   headers:headers,
+   body:data?JSON.stringify(data):undefined
+ });
+ var v=await r.json();
+ if(!r.ok)throw Error(v.error||'Request failed ('+r.status+')');
+ return v;
+}function checkBox(name,checked){var l=el('label');var c=document.createElement('input');c.type='checkbox';c.checked=checked;l.appendChild(c);l.appendChild(document.createTextNode(name));return {label:l,input:c};}function accountPicker(selected){var s=document.createElement('select');s.multiple=true;s.size=Math.max(2,Math.min(6,state.accounts.length));state.accounts.forEach(function(a){var o=document.createElement('option');o.value=a.id;o.textContent=a.label;o.selected=(selected||[]).indexOf(a.id)!==-1;s.appendChild(o);});return s;}function chosen(s){return Array.from(s.options).filter(function(o){return o.selected;}).map(function(o){return o.value;});}function deviceFields(values){
+ values=values||{};
+ var box=el('div');
+ var fields={};
+ [
+  ['ownerName','Owner name',values.ownerName||''],
+  ['deviceName','Device name',values.deviceName||''],
+  ['location','Location',values.location||'']
+ ].forEach(function(item){
+  var label=el('label',item[1]+' ');
+  var input=document.createElement('input');
+  input.type='text';
+  input.placeholder=item[1];
+  input.value=item[2];
+  input.maxLength=item[0]==='location'?120:
+                  item[0]==='ownerName'?100:80;
+  label.appendChild(input);
+  box.appendChild(label);
+  fields[item[0]]=input;
+ });
+ var label=el('label','Device type ');
+ var select=document.createElement('select');
+ ['','TV','Mobile','Laptop','Desktop','Tablet','Other']
+  .forEach(function(type){
+    var option=document.createElement('option');
+    option.value=type;
+    option.textContent=type||'Select type';
+    option.selected=type===(values.deviceType||'');
+    select.appendChild(option);
+  });
+ label.appendChild(select);
+ box.appendChild(label);
+ fields.deviceType=select;
+ return {box:box,fields:fields};
+}
+function populateInviteAccounts(){
+ var sel=$('invite-account');
+ sel.innerHTML='';
+ if(!state||!state.accounts||!state.accounts.length){
+  var o=document.createElement('option');
+  o.value='';
+  o.textContent='No subscriptions configured';
+  sel.appendChild(o);
+  return;
+ }
+ state.accounts.forEach(function(a){
+  var o=document.createElement('option');
+  o.value=a.id;
+  o.textContent=a.label;
+  sel.appendChild(o);
+ });
+}
+function editDetailsForm(device){
+ var row=el('tr');
+ var cell=document.createElement('td');
+ cell.colSpan=6;
+ row.dataset.editorFor=device.id;
+ var editor=deviceFields({
+  ownerName:device.ownerName||'',
+  deviceName:device.name||'',
+  location:device.location||'',
+  deviceType:device.deviceType||''
+ });
+ var saveBtn=el('button','Save Details');
+ var cancelBtn=el('button','Cancel');
+ cancelBtn.type='button';
+ var statusSpan=el('small');
+ saveBtn.onclick=async function(){
+  saveBtn.disabled=true;
+  statusSpan.textContent='Saving...';
+  try{
+    await call('/api/admin/devices/details',{
+      deviceId:device.id,
+      ownerName:editor.fields.ownerName.value,
+      deviceName:editor.fields.deviceName.value,
+      location:editor.fields.location.value,
+      deviceType:editor.fields.deviceType.value
+    });
+    say('Device details saved.');
+    await refresh();
+  }catch(err){
+    statusSpan.textContent=err.message;
+    saveBtn.disabled=false;
+  }
+ };
+ cancelBtn.onclick=function(){row.remove();};
+ cell.appendChild(editor.box);
+ cell.appendChild(saveBtn);
+ cell.appendChild(cancelBtn);
+ cell.appendChild(statusSpan);
+ row.appendChild(cell);
+ return row;
+}
+function editAccountForm(a){
+ var row=el('tr');
+ var cell=document.createElement('td');
+ cell.colSpan=4;
+ row.dataset.accountEditor=a.id;
+ var f=el('form');
+ f.onsubmit=async function(ev){
+  ev.preventDefault();
+  var fd=new FormData(f);
+  var payload={id:a.id,host:fd.get('host'),username:fd.get('username'),password:fd.get('password')};
+  try{
+    await call('/api/admin/accounts/update',payload);
+    say('Account updated successfully.');
+    await refresh();
+  }catch(err){say(err.message);}
+ };
+ var hostInput=document.createElement('input');
+ hostInput.name='host';
+ hostInput.value=a.host;
+ hostInput.required=true;
+ var userInput=document.createElement('input');
+ userInput.name='username';
+ userInput.value=a.username;
+ userInput.required=true;
+ var passInput=document.createElement('input');
+ passInput.name='password';
+ passInput.type='password';
+ passInput.placeholder='New password (required)';
+ passInput.required=true;
+ var saveBtn=el('button','Save Account');
+ var cancelBtn=el('button','Cancel');
+ cancelBtn.type='button';
+ cancelBtn.onclick=function(){row.remove();};
+ f.appendChild(hostInput);
+ f.appendChild(userInput);
+ f.appendChild(passInput);
+ f.appendChild(saveBtn);
+ f.appendChild(cancelBtn);
+ cell.appendChild(f);
+ row.appendChild(cell);
+ return row;
+}
+function renderAccounts(){
+ var d=$('accounts');
+ d.innerHTML='';
+ if(!state.accounts.length){
+  d.textContent='No accounts configured yet.';
+  populateInviteAccounts();
+  return;
+ }
+ var t=el('table');
+ var head=el('tr');
+ ['Label','Host','Username','Actions'].forEach(function(h){var th=el('th',h);head.appendChild(th);});
+ t.appendChild(head);
+ state.accounts.forEach(function(a){
+  var tr=el('tr');
+  [a.label,a.host,a.username].forEach(function(txt){var td=el('td',txt);tr.appendChild(td);});
+  var actions=el('td');
+  var edit=el('button','Edit');
+  edit.onclick=function(){
+    var existing=document.querySelector('[data-account-editor="'+a.id+'"]');
+    if(existing){existing.remove();return;}
+    tr.after(editAccountForm(a));
+  };
+  actions.appendChild(edit);
+  tr.appendChild(actions);
+  t.appendChild(tr);
+ });
+ d.appendChild(t);
+ populateInviteAccounts();
+}
+function renderPending(){
+ var d=$('pending');
+ d.innerHTML='';
+ if(!state.pending.length){d.textContent='No pairing codes waiting for approval.';return;}
+ state.pending.forEach(function(p){
+  var card=el('div');
+  card.style.borderTop='1px solid #443264';
+  card.style.padding='10px 0';
+  var h=el('h3','Pairing code: '+p.code);
+  var meta=el('p','Device: '+(p.name||'Unknown')+' · Platform: '+(p.platform||'browser')+' · Expires in: '+Math.max(0,Math.round((p.expires-Date.now())/1000))+'s');
+  var dev=deviceFields({deviceName:p.name||''});
+  var picker=accountPicker();
+  var live=checkBox('Live',true);
+  var movies=checkBox('Movies',true);
+  var series=checkBox('Series',true);
+  var approve=el('button','Approve device');
+  approve.onclick=async function(){
+    try{
+      await call('/api/admin/pair/approve',{
+        code:p.code,
+        deviceName:dev.fields.deviceName.value,
+        ownerName:dev.fields.ownerName.value,
+        location:dev.fields.location.value,
+        deviceType:dev.fields.deviceType.value,
+        accounts:chosen(picker),
+        live:live.input.checked,
+        movies:movies.input.checked,
+        series:series.input.checked
+      });
+      say('Device approved.');
+      await refresh();
+    }catch(err){say(err.message);}
+  };
+  card.appendChild(h);
+  card.appendChild(meta);
+  card.appendChild(dev.box);
+  card.appendChild(picker);
+  card.appendChild(live.label);
+  card.appendChild(movies.label);
+  card.appendChild(series.label);
+  card.appendChild(approve);
+  d.appendChild(card);
+ });
+}
+function renderDevices(){
+ var d=$('devices');
+ d.innerHTML='';
+ if(!state.devices.length){d.textContent='No devices approved yet.';return;}
+ var t=el('table');
+ var head=el('tr');
+ ['Device','Owner / Loc','Type','Permissions','Subscriptions','Actions'].forEach(function(h){var th=el('th',h);head.appendChild(th);});
+ t.appendChild(head);
+ state.devices.forEach(function(dev){
+  var tr=el('tr');
+  var nameCell=el('td',dev.name);
+  var small=el('small','Last seen: '+(dev.lastSeen?new Date(dev.lastSeen).toLocaleString():'never'));
+  nameCell.appendChild(document.createElement('br'));
+  nameCell.appendChild(small);
+  var ownerLoc=el('td',(dev.ownerName||'—')+' / '+(dev.location||'—'));
+  var typeCell=el('td',dev.deviceType||'—');
+  var p=dev.permissions||{};
+  var perms=['live','movies','series'].filter(function(k){return p[k];}).join(', ')||(p.all?'all':'none');
+  var permCell=el('td',perms);
+  var accNames=(dev.accounts||[]).map(function(id){var a=state.accounts.find(function(x){return x.id===id;});return a?a.label:id;}).join(', ')||'none';
+  var accCell=el('td',accNames);
+  var actions=el('td');
+  var edit=el('button','Edit');
+  edit.onclick=function(){
+    var existing=document.querySelector('[data-editor-for="'+dev.id+'"]');
+    if(existing){existing.remove();return;}
+    tr.after(editDetailsForm(dev));
+  };
+  var revoke=el('button','Revoke');
+  revoke.onclick=async function(){
+    if(!confirm('Revoke access for '+dev.name+'?'))return;
+    try{
+      await call('/api/admin/devices/revoke',{deviceId:dev.id});
+      say('Device access revoked.');
+      await refresh();
+    }catch(err){say(err.message);}
+  };
+  actions.appendChild(edit);
+  actions.appendChild(revoke);
+  tr.appendChild(nameCell);
+  tr.appendChild(ownerLoc);
+  tr.appendChild(typeCell);
+  tr.appendChild(permCell);
+  tr.appendChild(accCell);
+  tr.appendChild(actions);
+  t.appendChild(tr);
+ });
+ d.appendChild(t);
+}
+async function refresh(){
+ if(!key&&!csrf)return;
+ state=await call('/api/admin/state');
+ renderAccounts();
+ renderPending();
+ renderDevices();
+}
+async function disconnectAdmin(){
+ say('Disconnecting...');
+ try{
+   await fetch('/api/admin/session/logout',{
+     method:'POST',
+     credentials:'same-origin',
+     headers: csrf ? {'X-IPTV-CSRF':csrf} : {}
+   });
+ }catch(_){}
+ try{
+   await fetch('/api/admin/session',{method:'DELETE',credentials:'same-origin'});
+ }catch(_){}
+ csrf='';
+ key='';
+ $('key').style.display='inline-block';
+ $('key').value='';
+ $('connect').textContent='Connect';
+ $('connect').onclick=connectAdmin;
+ say('Disconnected.');
+ location.reload();
+}
+
+async function restoreAdmin(){
+ try{
+   var r=await fetch('/api/admin/session',{credentials:'same-origin',cache:'no-store'});
+   if(!r.ok)return;
+   var data=await r.json();
+   csrf=data.csrf||data.csrfToken||'';
+   if(!csrf)return;
+   $('key').style.display='none';
+   $('connect').textContent='Disconnect';
+   $('connect').onclick=disconnectAdmin;
+   say('Admin session active.');
+   await refresh();
+ }catch(err){
+   say('Session check: ' + (err.message||'failed'));
+ }
+}
+
+async function connectAdmin(){
+ var enteredKey=$('key').value.trim();
+ if(!enteredKey)return say('Enter the admin key');
+ say('Connecting...');
+ key=enteredKey;
+ try{
+   var r=await fetch('/api/admin/session/login',{
+     method:'POST',
+     credentials:'same-origin',
+     headers:{
+       'Content-Type':'application/json',
+       'Authorization':'Bearer '+enteredKey
+     }
+   });
+   if(r.ok){
+     var data=await r.json();
+     csrf=data.csrf||data.csrfToken||'';
+     key='';
+     $('key').value='';
+     $('key').style.display='none';
+     $('connect').textContent='Disconnect';
+     $('connect').onclick=disconnectAdmin;
+     say('Connected securely via HttpOnly session.');
+     await refresh();
+     return;
+   }
+ }catch(_){}
+
+ try{
+   await refresh();
+   $('key').style.display='none';
+   $('connect').textContent='Disconnect';
+   $('connect').onclick=disconnectAdmin;
+   say('Connected via Bearer token.');
+ }catch(err){
+   key='';
+   say('Authentication failed: '+(err.message||'Invalid key'));
+ }
+}
+$('connect').onclick=connectAdmin;
+$('add').onsubmit=async function(ev){
+ ev.preventDefault();
+ var f=new FormData(this);
+ try{
+   await call('/api/admin/accounts',Object.fromEntries(f.entries()));
+   this.reset();
+   say('Account saved encrypted at rest.');
+   await refresh();
+ }catch(err){
+   say(err.message);
+ }
+};
+setInterval(function(){
+ if((key||csrf)&&!document.querySelector('[data-account-editor]'))refresh().catch(function(){});
+},15000);
+restoreAdmin();
+})();
 </script></body></html>
