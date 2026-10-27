@@ -384,6 +384,128 @@
   }
 
   /* ═══════════════════════════════════════════════════════
+     SMART TV PLAYER HUD & SCRUB CONTROLS
+  ═══════════════════════════════════════════════════════ */
+  var playerScreen = document.getElementById('player');
+  var curTimeText = document.getElementById('player-cur-time');
+  var totalTimeText = document.getElementById('player-total-time');
+  var scrubTrack = document.getElementById('player-scrub-track');
+  var scrubFill = document.getElementById('player-scrub-fill');
+  var scrubThumb = document.getElementById('player-scrub-thumb');
+  var ctrlPlayPause = document.getElementById('ctrl-playpause');
+  var ctrlPlayIcon = document.getElementById('ctrl-play-icon');
+  var ctrlPauseIcon = document.getElementById('ctrl-pause-icon');
+  var ctrlRewind = document.getElementById('ctrl-rewind');
+  var ctrlForward = document.getElementById('ctrl-forward');
+  var centerGlyph = document.getElementById('player-center-glyph');
+  var hudHideTimer = null;
+
+  function showHud() {
+    if (!playerScreen) return;
+    playerScreen.classList.remove('hud-hidden');
+    resetHudTimer();
+  }
+
+  function resetHudTimer() {
+    if (hudHideTimer) clearTimeout(hudHideTimer);
+    if (!video || video.paused) return; // Keep visible while paused
+    hudHideTimer = setTimeout(function () {
+      if (playerScreen && current === 'player' && video && !video.paused) {
+        playerScreen.classList.add('hud-hidden');
+      }
+    }, 4000);
+  }
+
+  if (playerScreen) {
+    playerScreen.addEventListener('mousemove', showHud);
+    playerScreen.addEventListener('click', showHud);
+    playerScreen.addEventListener('touchstart', showHud, { passive: true });
+  }
+
+  function flashCenterGlyph(isPlay) {
+    if (!centerGlyph) return;
+    centerGlyph.innerHTML = isPlay
+      ? '<svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><polygon points="6 3 20 12 6 21 6 3"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    centerGlyph.style.display = 'flex';
+    setTimeout(function () { if (centerGlyph) centerGlyph.style.display = 'none'; }, 600);
+  }
+
+  function togglePlayPause() {
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(function () {});
+      if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'none';
+      if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'block';
+      flashCenterGlyph(true);
+      resetHudTimer();
+    } else {
+      video.pause();
+      if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'block';
+      if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'none';
+      flashCenterGlyph(false);
+      showHud();
+    }
+  }
+
+  if (ctrlPlayPause) {
+    ctrlPlayPause.addEventListener('click', togglePlayPause);
+  }
+
+  if (ctrlRewind) {
+    ctrlRewind.addEventListener('click', function () {
+      if (video) {
+        video.currentTime = Math.max(0, video.currentTime - 10);
+        showHud();
+      }
+    });
+  }
+
+  if (ctrlForward) {
+    ctrlForward.addEventListener('click', function () {
+      if (video) {
+        video.currentTime = Math.min(video.duration || Infinity, video.currentTime + 10);
+        showHud();
+      }
+    });
+  }
+
+  if (scrubTrack) {
+    scrubTrack.addEventListener('click', function (e) {
+      if (!video || !video.duration) return;
+      var rect = scrubTrack.getBoundingClientRect();
+      var pos = (e.clientX - rect.left) / rect.width;
+      video.currentTime = Math.max(0, Math.min(video.duration, pos * video.duration));
+      showHud();
+    });
+  }
+
+  if (video) {
+    video.addEventListener('timeupdate', function () {
+      if (!video || !video.duration) return;
+      var cur = video.currentTime || 0;
+      var dur = video.duration || 0;
+      if (curTimeText) curTimeText.textContent = formatTime(cur);
+      if (totalTimeText) totalTimeText.textContent = formatTime(dur);
+      var pct = dur > 0 ? (cur / dur) * 100 : 0;
+      if (scrubFill) scrubFill.style.width = pct + '%';
+      if (scrubThumb) scrubThumb.style.left = pct + '%';
+    });
+
+    video.addEventListener('play', function () {
+      if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'none';
+      if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'block';
+      resetHudTimer();
+    });
+
+    video.addEventListener('pause', function () {
+      if (ctrlPlayIcon) ctrlPlayIcon.style.display = 'block';
+      if (ctrlPauseIcon) ctrlPauseIcon.style.display = 'none';
+      showHud();
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════
      PLAY ITEM — called by catalog.js & series.js
   ═══════════════════════════════════════════════════════ */
   window.VLCPlayItem = async function (section, accountId, itemId, name, seriesId, image) {
