@@ -164,6 +164,30 @@
   </main>
 
   <!-- ═══════════════════════════════════════════════════════
+       SETTINGS / IPTV ACCOUNT SCREEN
+  ═══════════════════════════════════════════════════════ -->
+  <main id="settings" class="screen hidden" aria-live="polite">
+    <div class="settings-view">
+      <div class="settings-header">
+        <button class="back-btn" id="back-settings" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <div class="settings-title-group">
+          <h1 class="settings-title">IPTV Account Settings</h1>
+          <p class="settings-subtitle">Account subscription status & device parameters</p>
+        </div>
+      </div>
+      <div id="settings-content" class="settings-content">
+        <div class="settings-loading">
+          <div class="spinner"></div>
+          <p>Loading IPTV account info…</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════
        PLAYER SCREEN (Smart TV Fullscreen HUD)
   ═══════════════════════════════════════════════════════ -->
   <main id="player" class="screen tv-player-screen hidden">

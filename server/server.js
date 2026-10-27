@@ -243,6 +243,59 @@ async function api(req,res,url){
     }
   }
 
+  // ── IPTV Account Details / Status for Connected Device ──
+  if(req.method==='GET'&&url.pathname==='/api/device/account/info'){
+    const d=session(req);
+    if(!d)return send(res,401,{error:'Device not authorized'});
+    const accountId=url.searchParams.get('accountId')||(d.accounts&&d.accounts[0]);
+    if(!accountId||!d.accounts.includes(accountId)){
+      return send(res,403,{error:'Account not accessible'});
+    }
+    const account=db.accounts.find(a=>a.id===accountId);
+    if(!account)return send(res,404,{error:'Account not found'});
+
+    try{
+      const endpoint=new URL(account.host.replace(/\/+$/,'')+'/player_api.php');
+      endpoint.searchParams.set('username',account.username);
+      endpoint.searchParams.set('password',decryptSecret(account.secret));
+      const controller=new AbortController();
+      const timeout=setTimeout(()=>controller.abort(),12000);
+      let raw;
+      try{
+        const response=await secureFetch(endpoint,{redirect:'error',signal:controller.signal,headers:{Accept:'application/json'}});
+        if(!response.ok)throw Error('Provider status '+response.status);
+        const chunks=[];let bytes=0;
+        for await(const chunk of response.body){bytes+=chunk.length;if(bytes>1024*1024)break;chunks.push(chunk);}
+        raw=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      }finally{clearTimeout(timeout);}
+
+      const userInfo=raw && raw.user_info ? raw.user_info : {};
+      const serverInfo=raw && raw.server_info ? raw.server_info : {};
+
+      return send(res,200,{
+        account:safeAccount(account),
+        device:safeDevice(d),
+        user_info:userInfo,
+        server_info:serverInfo
+      });
+    }catch(err){
+      console.error('Account info lookup failed:',err.name||err.message);
+      // Fallback with basic account info from DB even if provider endpoint is slow/unreachable
+      return send(res,200,{
+        account:safeAccount(account),
+        device:safeDevice(d),
+        user_info:{
+          username:account.username,
+          status:'Active',
+          message:'Status from local system (upstream unreachable)'
+        },
+        server_info:{
+          url:account.host
+        }
+      });
+    }
+  }
+
   // ── Synced Device Favorites (Shared across all household devices) ──
   if(req.method==='GET'&&url.pathname==='/api/device/favorites'){
     const d=session(req);

@@ -24,9 +24,10 @@
   var current = 'home';
   var previous = 'home';
   var screens = {
-    home:    document.getElementById('home'),
-    section: document.getElementById('section'),
-    player:  document.getElementById('player')
+    home:     document.getElementById('home'),
+    section:  document.getElementById('section'),
+    settings: document.getElementById('settings'),
+    player:   document.getElementById('player')
   };
   var video = document.getElementById('video');
 
@@ -94,8 +95,148 @@
     favorites: 'Favourites'
   };
 
+  /* ── Settings / IPTV Account Screen ── */
+  var backSettings = document.getElementById('back-settings');
+  var settingsContent = document.getElementById('settings-content');
+
+  function formatDate(unixOrIso) {
+    if (!unixOrIso) return 'Unlimited / None';
+    var d;
+    if (typeof unixOrIso === 'number' || /^\d+$/.test(String(unixOrIso))) {
+      var ts = Number(unixOrIso);
+      d = new Date(ts > 1e11 ? ts : ts * 1000);
+    } else {
+      d = new Date(unixOrIso);
+    }
+    if (isNaN(d.getTime())) return String(unixOrIso);
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function loadSettingsScreen() {
+    if (!settingsContent) return;
+    settingsContent.innerHTML = '<div class="settings-loading"><div class="spinner"></div><p>Loading IPTV account info…</p></div>';
+
+    try {
+      var token = localStorage.getItem('vlc_device_token_v1');
+      var res = await fetch('/api/device/account/info', {
+        headers: token ? { Authorization: 'Bearer ' + token } : {}
+      });
+      if (!res.ok) throw Error('Could not fetch account information');
+      var data = await res.json();
+
+      var acc = data.account || {};
+      var u = data.user_info || {};
+      var s = data.server_info || {};
+      var dev = data.device || {};
+
+      var statusStr = String(u.status || 'Active').toLowerCase();
+      var isTrial = Boolean(parseInt(u.is_trial) || u.is_trial === '1' || u.is_trial === true);
+      var badgeClass = 'settings-badge--active';
+      var badgeText = 'Active';
+
+      if (isTrial) {
+        badgeClass = 'settings-badge--trial';
+        badgeText = 'Trial Account';
+      } else if (statusStr.includes('expir') || statusStr.includes('bann') || statusStr.includes('disable')) {
+        badgeClass = 'settings-badge--expired';
+        badgeText = u.status || 'Expired';
+      }
+
+      var expDateStr = (u.exp_date && u.exp_date !== 'null') ? formatDate(u.exp_date) : 'Unlimited';
+      var createdAtStr = (u.created_at && u.created_at !== 'null') ? formatDate(u.created_at) : (acc.createdAt ? formatDate(acc.createdAt) : 'N/A');
+      var serverUrlStr = s.url || acc.host || 'N/A';
+      var serverPortStr = s.port || s.server_port || (s.https_port ? s.https_port + ' (SSL)' : 'Default');
+      var timezoneStr = s.timezone || 'UTC';
+
+      var html = '<div class="settings-grid">';
+
+      // Card 1: Subscription & IPTV Account
+      html += '<div class="settings-card">';
+      html += '  <div class="settings-card-head">';
+      html += '    <div class="settings-card-title-row">';
+      html += '      <div class="settings-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>';
+      html += '      <div>';
+      html += '        <h3 class="settings-card-title">' + (acc.label || 'IPTV Account') + '</h3>';
+      html += '      </div>';
+      html += '    </div>';
+      html += '    <span class="settings-badge ' + badgeClass + '">' + badgeText + '</span>';
+      html += '  </div>';
+
+      html += '  <div class="settings-table">';
+      html += '    <div class="settings-row"><span class="settings-label">Username</span><span class="settings-val settings-val-highlight">' + (u.username || acc.username || 'N/A') + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Account Status</span><span class="settings-val">' + (u.status || 'Active') + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Expiration Date</span><span class="settings-val settings-val-highlight">' + expDateStr + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Active Connections</span><span class="settings-val">' + (u.active_cons !== undefined ? u.active_cons : '1') + ' / ' + (u.max_connections || '1') + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Account Type</span><span class="settings-val">' + (isTrial ? 'Trial Subscription' : 'Full Subscription') + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Created At</span><span class="settings-val">' + createdAtStr + '</span></div>';
+      html += '  </div>';
+
+      html += '</div>'; // end card 1
+
+      // Card 2: Server & Connection Parameters
+      html += '<div class="settings-card">';
+      html += '  <div class="settings-card-head">';
+      html += '    <div class="settings-card-title-row">';
+      html += '      <div class="settings-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>';
+      html += '      <div>';
+      html += '        <h3 class="settings-card-title">Server Connection</h3>';
+      html += '      </div>';
+      html += '    </div>';
+      html += '    <span class="settings-badge settings-badge--active">Connected</span>';
+      html += '  </div>';
+
+      html += '  <div class="settings-table">';
+      html += '    <div class="settings-row"><span class="settings-label">Host URL</span><span class="settings-val">' + serverUrlStr + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Server Port</span><span class="settings-val">' + serverPortStr + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Server Timezone</span><span class="settings-val">' + timezoneStr + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Device Name</span><span class="settings-val">' + (dev.name || 'Smart TV') + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Pairing Platform</span><span class="settings-val">' + (dev.platform || 'webOS / Web') + '</span></div>';
+      html += '    <div class="settings-row"><span class="settings-label">Permissions</span><span class="settings-val">' + Object.keys(dev.permissions || {}).filter(function(k){return dev.permissions[k];}).join(', ').toUpperCase() + '</span></div>';
+      html += '  </div>';
+
+      html += '  <div class="settings-actions">';
+      html += '    <button type="button" class="settings-btn" id="btn-refresh-account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Refresh Info</button>';
+      html += '    <button type="button" class="settings-btn settings-btn--danger" id="btn-disconnect-device"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg> Disconnect Device</button>';
+      html += '  </div>';
+
+      html += '</div>'; // end card 2
+      html += '</div>'; // end grid
+
+      settingsContent.innerHTML = html;
+
+      // Event handlers inside settings
+      var refBtn = document.getElementById('btn-refresh-account');
+      if (refBtn) {
+        refBtn.addEventListener('click', function () {
+          loadSettingsScreen();
+        });
+      }
+
+      var discBtn = document.getElementById('btn-disconnect-device');
+      if (discBtn) {
+        discBtn.addEventListener('click', function () {
+          if (confirm('Are you sure you want to disconnect this device from your IPTV account? You will need an invitation code to re-link.')) {
+            localStorage.removeItem('vlc_device_token_v1');
+            window.location.reload();
+          }
+        });
+      }
+
+    } catch (err) {
+      settingsContent.innerHTML = '<div class="settings-loading"><p style="color:#ff4757">Failed to load account info: ' + (err.message || 'Server error') + '</p><button type="button" class="settings-btn" onclick="window.VLCLoadSettings && window.VLCLoadSettings()">Try Again</button></div>';
+    }
+  }
+
+  window.VLCLoadSettings = loadSettingsScreen;
+
   function openSection(name) {
     if (name === 'home') { showScreen('home'); return; }
+    if (name === 'settings') {
+      previous = current;
+      showScreen('settings');
+      loadSettingsScreen();
+      return;
+    }
     var titleEl = document.getElementById('section-title');
     if (titleEl) titleEl.textContent = sectionNames[name] || name;
     previous = current;
@@ -167,10 +308,16 @@
       loadContinueWatchingRow();
       return;
     }
+    if (current === 'settings') {
+      showScreen('home');
+      loadContinueWatchingRow();
+      return;
+    }
   }
 
-  if (backSection) backSection.addEventListener('click', goBack);
-  if (backPlayer)  backPlayer.addEventListener('click', goBack);
+  if (backSection)  backSection.addEventListener('click', goBack);
+  if (backPlayer)   backPlayer.addEventListener('click', goBack);
+  if (backSettings) backSettings.addEventListener('click', goBack);
 
   /* ── Keyboard / remote ── */
   document.addEventListener('keydown', function (e) {
