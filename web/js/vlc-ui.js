@@ -1415,7 +1415,21 @@
     video.addEventListener('error', function () {
       if (window._currentHls) return; // Managed by HLS.js
       var errEl = document.getElementById('player-error');
-      if (errEl) errEl.textContent = 'This stream format is not supported by your browser.';
+      if (!errEl) return;
+      var mediaErr = video.error;
+      var code = mediaErr ? mediaErr.code : 0;
+      var msg = 'Playback error (' + code + '). ';
+      if (code === 3) {
+        msg = 'Video decode error. The TV decoder encountered an unsupported video track.';
+      } else if (code === 4) {
+        msg = 'Media format or audio codec not natively supported by TV browser.';
+        if (currentPlayback && currentPlayback.audioUrl && audioBtn) {
+          msg += ' Click "Fix Audio (AAC)" above to convert stream.';
+        }
+      } else {
+        msg = 'This stream format is not supported by your TV browser.';
+      }
+      errEl.textContent = msg;
     });
   }
 
