@@ -7,7 +7,10 @@
     items: [],
     activeItem: null,
     section: '',
-    accountId: ''
+    accountId: '',
+    searchQuery: '',
+    sortMode: 'default', // 'default', 'newest', 'year', 'rating', 'title'
+    categorySearch: ''
   };
 
   var container = document.createElement('div');
@@ -30,7 +33,7 @@
   }
 
   /* Parse name into Title, Year, and Quality tags */
-  function parseItemMeta(rawName) {
+  function parseItemMeta(rawName, explicitRating) {
     var name = (rawName || 'Untitled').trim();
     var yearMatch = name.match(/[\(\[\s](19\d\d|20\d\d)[\)\]\s]?/);
     var year = yearMatch ? yearMatch[1] : '';
@@ -43,13 +46,51 @@
     var is4k = /4K|UHD/i.test(name);
     var isFhd = /FHD|1080/i.test(name);
 
+    var ratingVal = '';
+    if (explicitRating && !isNaN(Number(explicitRating)) && Number(explicitRating) > 0) {
+      var num = Number(explicitRating);
+      ratingVal = '★ ' + (num > 5 ? num.toFixed(1) : (num * 2).toFixed(1));
+    } else {
+      ratingVal = '★ ' + (4.0 + (Math.abs(name.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0)) % 10) / 10).toFixed(1);
+    }
+
     return {
       title: cleanTitle || name,
       rawName: name,
       year: year || '2024',
+      numericYear: year ? Number(year) : 0,
       quality: is4k ? '4K Ultra HD' : (isFhd ? '1080p FHD' : 'HD'),
-      rating: '★ ' + (4.0 + (Math.abs(name.split('').reduce(function(a,c){return a+c.charCodeAt(0);},0)) % 10) / 10).toFixed(1)
+      rating: ratingVal
     };
+  }
+
+  /* Parse uploaded timestamp / date into human label */
+  function formatAddedBadge(addedVal) {
+    if (!addedVal) return '';
+    var ts = 0;
+    if (/^\d{10,13}$/.test(String(addedVal))) {
+      ts = Number(addedVal);
+      if (ts < 1e11) ts = ts * 1000;
+    } else {
+      var d = Date.parse(addedVal);
+      if (!isNaN(d)) ts = d;
+    }
+    if (!ts) return '';
+    var diffMs = Date.now() - ts;
+    var days = Math.floor(diffMs / (86400000));
+    if (days <= 7) return '🔥 NEW';
+    if (days <= 30) return 'NEW';
+    return '';
+  }
+
+  function getAddedTimestamp(addedVal) {
+    if (!addedVal) return 0;
+    if (/^\d{10,13}$/.test(String(addedVal))) {
+      var ts = Number(addedVal);
+      return ts < 1e11 ? ts * 1000 : ts;
+    }
+    var d = Date.parse(addedVal);
+    return isNaN(d) ? 0 : d;
   }
 
   /* ── Showcase Detail Header (Top of main area) ── */
@@ -57,7 +98,7 @@
 
   function updateShowcase(item) {
     if (!showcaseEl || !item) return;
-    var meta = parseItemMeta(item.name);
+    var meta = parseItemMeta(item.name, item.rating);
 
     var titleEl = showcaseEl.querySelector('.showcase-title');
     var yearEl = showcaseEl.querySelector('.showcase-year');
@@ -156,9 +197,171 @@
     return wrap;
   }
 
+  /* ── Filter & Sort Items ── */
+  function getFilteredAndSortedItems(items) {
+    if (!Array.isArray(items)) return [];
+    var list = items.slice();
+
+    // 1. Text filter
+    var query = (state.searchQuery || '').trim().toLowerCase();
+    if (query) {
+      list = list.filter(function (it) {
+        return (it.name || '').toLowerCase().indexOf(query) !== -1;
+      });
+    }
+
+    // 2. Sort mode
+    if (state.sortMode === 'newest') {
+      list.sort(function (a, b) {
+        var tA = getAddedTimestamp(a.added);
+        var tB = getAddedTimestamp(b.added);
+        if (tA !== tB) return tB - tA;
+        return (b.id || 0) - (a.id || 0);
+      });
+    } else if (state.sortMode === 'year') {
+      list.sort(function (a, b) {
+        var yA = parseItemMeta(a.name).numericYear;
+        var yB = parseItemMeta(b.name).numericYear;
+        if (yA !== yB) return yB - yA;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } else if (state.sortMode === 'rating') {
+      list.sort(function (a, b) {
+        var rA = parseFloat(a.rating) || 0;
+        var rB = parseFloat(b.rating) || 0;
+        if (rA !== rB) return rB - rA;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    } else if (state.sortMode === 'title') {
+      list.sort(function (a, b) {
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    }
+
+    return list;
+  }
+
+  /* ── Render Toolbar (Search + Sort Pills) ── */
+  function createToolbarDom(onFilterChange) {
+    var toolbar = el('div', undefined, 'catalog-filter-bar');
+
+    // Search input box
+    var searchBox = el('div', undefined, 'cat-search-box');
+    searchBox.innerHTML =
+      '<svg class="cat-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      '<input type="text" class="cat-search-input" placeholder="Search in this category…" value="' + (state.searchQuery || '') + '">';
+
+    var input = searchBox.querySelector('.cat-search-input');
+    input.addEventListener('input', function (e) {
+      state.searchQuery = e.target.value;
+      onFilterChange();
+    });
+
+    toolbar.appendChild(searchBox);
+
+    // Sort Pills
+    var pillsWrap = el('div', undefined, 'cat-sort-pills');
+    var sorts = [
+      { id: 'default', label: 'Default' },
+      { id: 'newest',  label: '🔥 Newly Added' },
+      { id: 'year',    label: '📅 Release Year' },
+      { id: 'rating',  label: '★ Top Rated' },
+      { id: 'title',   label: '🔤 A–Z' }
+    ];
+
+    sorts.forEach(function (s) {
+      var pill = el('button', s.label, 'cat-sort-pill' + (state.sortMode === s.id ? ' cat-sort-pill--active' : ''));
+      pill.type = 'button';
+      pill.setAttribute('data-sort', s.id);
+      pill.addEventListener('click', function () {
+        state.sortMode = s.id;
+        pillsWrap.querySelectorAll('.cat-sort-pill').forEach(function (b) {
+          b.classList.toggle('cat-sort-pill--active', b.getAttribute('data-sort') === s.id);
+        });
+        onFilterChange();
+      });
+      pillsWrap.appendChild(pill);
+    });
+
+    toolbar.appendChild(pillsWrap);
+    return toolbar;
+  }
+
+  /* ── Render Cards Grid ── */
+  function renderCards(grid, items, category) {
+    clearNode(grid);
+
+    if (!items.length) {
+      grid.innerHTML = '<p class="catalog-message">No titles match your filter.</p>';
+      return;
+    }
+
+    items.forEach(function (item) {
+      var card = el('button', undefined, 'cat-poster-card');
+      card.type = 'button';
+      card.title = item.name || '';
+
+      var thumb = el('div', undefined, 'cat-poster-thumb');
+      if (item.image && /^https?:\/\//i.test(item.image)) {
+        var img = document.createElement('img');
+        img.src = item.image;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = function () {
+          img.remove();
+          if (!thumb.querySelector('.cat-poster-thumb-empty')) {
+            var fallback = el('div', '▶', 'cat-poster-thumb-empty');
+            thumb.appendChild(fallback);
+          }
+        };
+        thumb.appendChild(img);
+      } else {
+        thumb.appendChild(el('div', '▶', 'cat-poster-thumb-empty'));
+      }
+
+      // New upload badge
+      var newBadgeText = formatAddedBadge(item.added);
+      if (newBadgeText) {
+        var newBadge = el('span', newBadgeText, 'cat-poster-badge-new');
+        thumb.appendChild(newBadge);
+      }
+
+      var playOverlay = el('div', undefined, 'cat-poster-play');
+      playOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="white" width="32" height="32"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
+      thumb.appendChild(playOverlay);
+
+      var nameSpan = el('span', item.name || 'Untitled', 'cat-poster-name');
+
+      card.appendChild(thumb);
+      card.appendChild(nameSpan);
+
+      function onCardFocus() {
+        updateShowcase(item);
+      }
+      card.addEventListener('focus', onCardFocus);
+      card.addEventListener('mouseenter', onCardFocus);
+
+      card.addEventListener('click', function () {
+        if (state.section === 'series') {
+          if (window.VLCSeriesOpen) {
+            window.VLCSeriesOpen(state.accountId, item, container, function () { loadCategoryItems(category || state.activeCategory); });
+            return;
+          }
+        }
+        if (window.VLCPlayItem) {
+          window.VLCPlayItem(state.section, state.accountId, item.id, item.name, undefined, item.image);
+        }
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
   /* ── Load Items for a Category ── */
   async function loadCategoryItems(category) {
     state.activeCategory = category;
+    state.searchQuery = ''; // Reset search on category switch
 
     // Update active category pill
     var catButtons = container.querySelectorAll('.cat-pill');
@@ -190,66 +393,22 @@
         return;
       }
 
+      // 1. Add Filter & Sort Toolbar
+      var toolbar = createToolbarDom(function () {
+        var filtered = getFilteredAndSortedItems(state.items);
+        renderCards(grid, filtered, category);
+        if (filtered.length) updateShowcase(filtered[0]);
+      });
+      itemsWrap.appendChild(toolbar);
+
+      // 2. Add Cards Grid
       var grid = el('div', undefined, 'catalog-cards-grid');
       itemsWrap.appendChild(grid);
 
-      // Default showcase to first item
-      updateShowcase(state.items[0]);
-
-      state.items.forEach(function (item) {
-        var card = el('button', undefined, 'cat-poster-card');
-        card.type = 'button';
-        card.title = item.name || '';
-
-        var thumb = el('div', undefined, 'cat-poster-thumb');
-        if (item.image && /^https?:\/\//i.test(item.image)) {
-          var img = document.createElement('img');
-          img.src = item.image;
-          img.alt = '';
-          img.loading = 'lazy';
-          img.referrerPolicy = 'no-referrer';
-          img.onerror = function () {
-            img.remove();
-            if (!thumb.querySelector('.cat-poster-thumb-empty')) {
-              var fallback = el('div', '▶', 'cat-poster-thumb-empty');
-              thumb.appendChild(fallback);
-            }
-          };
-          thumb.appendChild(img);
-        } else {
-          thumb.appendChild(el('div', '▶', 'cat-poster-thumb-empty'));
-        }
-
-        var playOverlay = el('div', undefined, 'cat-poster-play');
-        playOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="white" width="32" height="32"><polygon points="6 3 20 12 6 21 6 3"/></svg>';
-        thumb.appendChild(playOverlay);
-
-        var nameSpan = el('span', item.name || 'Untitled', 'cat-poster-name');
-
-        card.appendChild(thumb);
-        card.appendChild(nameSpan);
-
-        // Hover or Focus updates the top dynamic detail banner
-        function onCardFocus() {
-          updateShowcase(item);
-        }
-        card.addEventListener('focus', onCardFocus);
-        card.addEventListener('mouseenter', onCardFocus);
-
-        card.addEventListener('click', function () {
-          if (state.section === 'series') {
-            if (window.VLCSeriesOpen) {
-              window.VLCSeriesOpen(state.accountId, item, container, function () { loadCategoryItems(category); });
-              return;
-            }
-          }
-          if (window.VLCPlayItem) {
-            window.VLCPlayItem(state.section, state.accountId, item.id, item.name, undefined, item.image);
-          }
-        });
-
-        grid.appendChild(card);
-      });
+      // 3. Render filtered cards & update showcase
+      var filtered = getFilteredAndSortedItems(state.items);
+      renderCards(grid, filtered, category);
+      if (filtered.length) updateShowcase(filtered[0]);
 
     } catch (err) {
       itemsWrap.innerHTML = '<p class="catalog-message">Error loading category: ' + err.message + '</p>';
@@ -260,6 +419,7 @@
   function renderLayout(categories) {
     clearNode(container);
     state.categories = categories || [];
+    state.categorySearch = '';
 
     // Left Category Sidebar
     var catCol = el('aside', undefined, 'catalog-categories-col');
@@ -267,36 +427,62 @@
     catHeader.innerHTML = '<h2 class="cat-col-title">Categories</h2>';
     catCol.appendChild(catHeader);
 
+    // Category search input
+    var catSearchBox = el('div', undefined, 'cat-col-search');
+    catSearchBox.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+      '<input type="text" class="cat-col-search-input" placeholder="Filter categories…">';
+    var catInput = catSearchBox.querySelector('.cat-col-search-input');
+    catInput.addEventListener('input', function (e) {
+      state.categorySearch = (e.target.value || '').toLowerCase();
+      renderCategoryPills(catList);
+    });
+    catCol.appendChild(catSearchBox);
+
     var catList = el('div', undefined, 'cat-pill-list');
     catCol.appendChild(catList);
 
-    // If favorites exist, add a ⭐ Favorites category pill at the top
-    if (window.VLCFavoritesList && window.VLCFavoritesList.length) {
-      var favCount = window.VLCFavoritesList.filter(function(f){ return f.section === state.section; }).length;
-      if (favCount > 0) {
-        var favPill = el('button', undefined, 'cat-pill cat-pill--fav');
-        favPill.type = 'button';
-        favPill.innerHTML = '<span class="cat-pill-name">⭐ My Favorites</span><span class="cat-pill-badge">' + favCount + '</span>';
-        favPill.addEventListener('click', function () {
-          var favs = window.VLCFavoritesList.filter(function(f){ return f.section === state.section; });
-          renderFavoritesGrid(favs);
-        });
-        catList.appendChild(favPill);
+    function renderCategoryPills(targetList) {
+      clearNode(targetList);
+
+      // If favorites exist, add a ⭐ Favorites category pill at the top
+      if (window.VLCFavoritesList && window.VLCFavoritesList.length) {
+        var favCount = window.VLCFavoritesList.filter(function(f){ return f.section === state.section; }).length;
+        if (favCount > 0 && (!state.categorySearch || 'my favorites'.indexOf(state.categorySearch) !== -1)) {
+          var favPill = el('button', undefined, 'cat-pill cat-pill--fav');
+          favPill.type = 'button';
+          favPill.innerHTML = '<span class="cat-pill-name">⭐ My Favorites</span><span class="cat-pill-badge">' + favCount + '</span>';
+          favPill.addEventListener('click', function () {
+            var favs = window.VLCFavoritesList.filter(function(f){ return f.section === state.section; });
+            renderFavoritesGrid(favs);
+          });
+          targetList.appendChild(favPill);
+        }
       }
-    }
 
-    state.categories.forEach(function (cat) {
-      var pill = el('button', undefined, 'cat-pill');
-      pill.type = 'button';
-      pill.setAttribute('data-cat-id', String(cat.category_id));
-      pill.innerHTML = '<span class="cat-pill-name">' + (cat.category_name || 'Category') + '</span>';
-
-      pill.addEventListener('click', function () {
-        loadCategoryItems(cat);
+      var filteredCats = state.categories.filter(function (c) {
+        if (!state.categorySearch) return true;
+        return (c.category_name || '').toLowerCase().indexOf(state.categorySearch) !== -1;
       });
 
-      catList.appendChild(pill);
-    });
+      filteredCats.forEach(function (cat) {
+        var pill = el('button', undefined, 'cat-pill');
+        pill.type = 'button';
+        pill.setAttribute('data-cat-id', String(cat.category_id));
+        if (state.activeCategory && String(state.activeCategory.category_id) === String(cat.category_id)) {
+          pill.classList.add('cat-pill--active');
+        }
+        pill.innerHTML = '<span class="cat-pill-name">' + (cat.category_name || 'Category') + '</span>';
+
+        pill.addEventListener('click', function () {
+          loadCategoryItems(cat);
+        });
+
+        targetList.appendChild(pill);
+      });
+    }
+
+    renderCategoryPills(catList);
 
     // Right Main Area: Top Showcase + Bottom Grid
     var mainArea = el('div', undefined, 'catalog-main-area');

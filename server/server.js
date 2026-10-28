@@ -239,6 +239,8 @@ async function api(req,res,url){
         name:String(item.name||item.title||'Untitled').slice(0,160),
         category_id:categoryId,
         image:String(item.stream_icon||item.cover||'').slice(0,1500),
+        added:String(item.added||'').slice(0,40),
+        rating:String(item.rating||item.rating_5based||'').slice(0,10),
         container_extension:section==='movies'?String(item.container_extension||'').toLowerCase():'',
         type:section
       })).filter(item=>/^[0-9]{1,16}$/.test(item.id));
