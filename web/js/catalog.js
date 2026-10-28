@@ -129,7 +129,10 @@
       watchBtn.onclick = function () {
         if (state.section === 'series') {
           if (window.VLCSeriesOpen) {
-            window.VLCSeriesOpen(state.accountId, item, container, function () { loadCategoryItems(state.activeCategory); });
+            var restoreCategory = state.activeCategory;
+            window.VLCSeriesOpen(state.accountId, item, container, function () {
+              renderLayout(state.categories, restoreCategory);
+            });
             return;
           }
         }
@@ -363,7 +366,10 @@
       card.addEventListener('click', function () {
         if (state.section === 'series') {
           if (window.VLCSeriesOpen) {
-            window.VLCSeriesOpen(state.accountId, item, container, function () { loadCategoryItems(category || state.activeCategory); });
+            var restoreCategory = category || state.activeCategory;
+            window.VLCSeriesOpen(state.accountId, item, container, function () {
+              renderLayout(state.categories, restoreCategory);
+            });
             return;
           }
         }
@@ -434,10 +440,13 @@
   }
 
   /* ── Render Split-Screen Layout ── */
-  function renderLayout(categories) {
+  function renderLayout(categories, targetCategory) {
     clearNode(container);
     state.categories = categories || [];
     state.categorySearch = '';
+    if (targetCategory) {
+      state.activeCategory = targetCategory;
+    }
 
     // Left Category Sidebar
     var catCol = el('aside', undefined, 'catalog-categories-col');
@@ -530,13 +539,18 @@
     container.appendChild(catCol);
     container.appendChild(mainArea);
 
-    // Automatically load the first category
-    if (state.categories.length) {
+    // Automatically load the specified or first category
+    if (targetCategory) {
+      loadCategoryItems(targetCategory);
+    } else if (state.categories.length) {
       loadCategoryItems(state.categories[0]);
     }
   }
 
   function renderFavoritesGrid(favs) {
+    if (!container.querySelector('.catalog-items-scroll')) {
+      renderLayout(state.categories);
+    }
     var itemsWrap = container.querySelector('.catalog-items-scroll');
     if (!itemsWrap) return;
     clearNode(itemsWrap);
@@ -595,7 +609,9 @@
       card.addEventListener('click', function () {
         if (fav.section === 'series') {
           if (window.VLCSeriesOpen) {
-            window.VLCSeriesOpen(fav.accountId, { id: fav.itemId, name: fav.name, image: fav.image }, container, function () { renderFavoritesGrid(favs); });
+            window.VLCSeriesOpen(fav.accountId, { id: fav.itemId, name: fav.name, image: fav.image }, container, function () {
+              renderFavoritesGrid(favs);
+            });
             return;
           }
         }
@@ -609,6 +625,12 @@
   }
 
   window.VLCCatalogBack = function () {
+    // If series panel is currently open inside catalog container, press its back button
+    var seriesBackBtn = container.querySelector('.vlc-series-panel .back-btn');
+    if (seriesBackBtn) {
+      seriesBackBtn.click();
+      return true; // Handled back navigation to catalog
+    }
     return false; // Handled directly by Home screen switch
   };
 
