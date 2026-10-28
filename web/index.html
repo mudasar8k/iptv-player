@@ -9,6 +9,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/vlc-main.css">
+<script>
+// Polyfill Element.prototype.replaceChildren for older Smart TV browsers (webOS 3/4/5)
+if (!Element.prototype.replaceChildren) {
+  Element.prototype.replaceChildren = function () {
+    while (this.firstChild) this.removeChild(this.firstChild);
+    this.append.apply(this, arguments);
+  };
+}
+</script>
 </head>
 <body>
 <div id="app">

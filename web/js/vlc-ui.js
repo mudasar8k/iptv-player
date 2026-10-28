@@ -18,7 +18,12 @@
       (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
   }
   updateClock();
-  setInterval(updateClock, 15000);
+  function clearNode(node) {
+    if (!node) return;
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  }
 
   /* ── Screen management ── */
   var current = 'home';
@@ -1043,7 +1048,7 @@
 
   function renderDrawerEpisodes(seasonNum) {
     if (!window.VLCSeriesContext || !drawerEpisodesList) return;
-    drawerEpisodesList.replaceChildren();
+    clearNode(drawerEpisodesList);
 
     var allEps = window.VLCSeriesContext.allEpisodes || [];
     var list = allEps
@@ -1101,7 +1106,7 @@
 
     // Render seasons pills
     if (drawerSeasonsWrap) {
-      drawerSeasonsWrap.replaceChildren();
+      clearNode(drawerSeasonsWrap);
       var seasons = ctx.seasons || [1];
       var activeSeason = ctx.currentSeason || seasons[0];
 
@@ -1538,7 +1543,7 @@
         return;
       }
 
-      strip.replaceChildren();
+      clearNode(strip);
       itemData.items.slice(0, 18).forEach(function (item) {
         var card = isChannel
           ? makeChannelCard(item, accountId)
@@ -1566,7 +1571,7 @@
     }
 
     row.style.display = 'block';
-    strip.replaceChildren();
+    clearNode(strip);
 
     list.slice(0, 20).forEach(function (item) {
       var card = makePosterCard(item, item.section, item.accountId);
@@ -1625,7 +1630,7 @@
 
       window.VLCFavoritesList = data.favorites;
       row.style.display = 'block';
-      strip.replaceChildren();
+      clearNode(strip);
 
       data.favorites.forEach(function (fav) {
         var card = makePosterCard(fav, fav.section, fav.accountId);

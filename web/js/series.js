@@ -8,6 +8,13 @@
 
   var generation = 0;
 
+  function clearNode(node) {
+    if (!node) return;
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  }
+
   function el(tag, text, cls) {
     var e = document.createElement(tag);
     if (text !== undefined) e.textContent = text;
@@ -21,7 +28,7 @@
 
   window.VLCSeriesOpen = async function (accountId, item, container, back) {
     var id = ++generation;
-    container.replaceChildren();
+    clearNode(container);
 
     var panel = el('div', undefined, 'vlc-series-panel');
     container.appendChild(panel);
@@ -124,7 +131,7 @@
       panel.appendChild(episodesGrid);
 
       function renderEpisodes(season) {
-        episodesGrid.replaceChildren();
+        clearNode(episodesGrid);
         var filtered = episodes
           .filter(function (e) { return e.season === season; })
           .sort(function (a, b) { return a.episode - b.episode; });

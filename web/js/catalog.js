@@ -15,6 +15,13 @@
   container.className = 'catalog-split-view';
   document.getElementById('section').appendChild(container);
 
+  function clearNode(node) {
+    if (!node) return;
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  }
+
   function el(tag, text, className) {
     var elem = document.createElement(tag);
     if (text !== undefined && text !== null) elem.textContent = text;
@@ -176,7 +183,7 @@
       if (!res.ok) throw Error(data.error || 'Could not load category');
 
       state.items = data.items || [];
-      itemsWrap.replaceChildren();
+      clearNode(itemsWrap);
 
       if (!state.items.length) {
         itemsWrap.innerHTML = '<p class="catalog-message">No content found in this category.</p>';
@@ -201,10 +208,16 @@
           img.alt = '';
           img.loading = 'lazy';
           img.referrerPolicy = 'no-referrer';
-          img.onerror = function () { img.remove(); };
+          img.onerror = function () {
+            img.remove();
+            if (!thumb.querySelector('.cat-poster-thumb-empty')) {
+              var fallback = el('div', '▶', 'cat-poster-thumb-empty');
+              thumb.appendChild(fallback);
+            }
+          };
           thumb.appendChild(img);
         } else {
-          thumb.textContent = '▶';
+          thumb.appendChild(el('div', '▶', 'cat-poster-thumb-empty'));
         }
 
         var playOverlay = el('div', undefined, 'cat-poster-play');
@@ -245,7 +258,7 @@
 
   /* ── Render Split-Screen Layout ── */
   function renderLayout(categories) {
-    container.replaceChildren();
+    clearNode(container);
     state.categories = categories || [];
 
     // Left Category Sidebar
@@ -305,7 +318,7 @@
   function renderFavoritesGrid(favs) {
     var itemsWrap = container.querySelector('.catalog-items-scroll');
     if (!itemsWrap) return;
-    itemsWrap.replaceChildren();
+    clearNode(itemsWrap);
 
     var catButtons = container.querySelectorAll('.cat-pill');
     catButtons.forEach(function (btn) { btn.classList.remove('cat-pill--active'); });
@@ -339,10 +352,16 @@
         img.alt = '';
         img.loading = 'lazy';
         img.referrerPolicy = 'no-referrer';
-        img.onerror = function () { img.remove(); };
+        img.onerror = function () {
+          img.remove();
+          if (!thumb.querySelector('.cat-poster-thumb-empty')) {
+            var fallback = el('div', '▶', 'cat-poster-thumb-empty');
+            thumb.appendChild(fallback);
+          }
+        };
         thumb.appendChild(img);
       } else {
-        thumb.textContent = '▶';
+        thumb.appendChild(el('div', '▶', 'cat-poster-thumb-empty'));
       }
 
       card.appendChild(thumb);
