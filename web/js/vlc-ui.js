@@ -327,8 +327,15 @@
   /* ── Keyboard / remote ── */
   document.addEventListener('keydown', function (e) {
     var k = e.keyCode || e.which;
+    var target = e.target || document.activeElement;
+    var isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
     // Back / Escape / webOS Back key
     if (k === 461 || k === 27 || k === 8) {
+      // If typing in an input field, allow normal Backspace text editing without navigating back
+      if (k === 8 && isInput) {
+        return;
+      }
       if (current !== 'home') { e.preventDefault(); goBack(); }
     // Arrow navigation
     } else if (k >= 37 && k <= 40) {

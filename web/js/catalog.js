@@ -249,13 +249,31 @@
     var searchBox = el('div', undefined, 'cat-search-box');
     searchBox.innerHTML =
       '<svg class="cat-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-      '<input type="text" class="cat-search-input" placeholder="Search in this category…" value="' + (state.searchQuery || '') + '">';
+      '<input type="text" class="cat-search-input" placeholder="Search in this category…" value="' + (state.searchQuery || '') + '">' +
+      '<button type="button" class="cat-search-clear' + (state.searchQuery ? ' is-visible' : '') + '" title="Clear search" aria-label="Clear search">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>';
 
     var input = searchBox.querySelector('.cat-search-input');
+    var clearBtn = searchBox.querySelector('.cat-search-clear');
+
     input.addEventListener('input', function (e) {
       state.searchQuery = e.target.value;
+      if (clearBtn) {
+        clearBtn.classList.toggle('is-visible', Boolean(state.searchQuery));
+      }
       onFilterChange();
     });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        state.searchQuery = '';
+        input.value = '';
+        clearBtn.classList.remove('is-visible');
+        input.focus();
+        onFilterChange();
+      });
+    }
 
     toolbar.appendChild(searchBox);
 
@@ -431,12 +449,29 @@
     var catSearchBox = el('div', undefined, 'cat-col-search');
     catSearchBox.innerHTML =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-      '<input type="text" class="cat-col-search-input" placeholder="Filter categories…">';
+      '<input type="text" class="cat-col-search-input" placeholder="Filter categories…">' +
+      '<button type="button" class="cat-search-clear" title="Clear filter" aria-label="Clear filter">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+      '</button>';
     var catInput = catSearchBox.querySelector('.cat-col-search-input');
+    var catClear = catSearchBox.querySelector('.cat-search-clear');
+
     catInput.addEventListener('input', function (e) {
       state.categorySearch = (e.target.value || '').toLowerCase();
+      if (catClear) catClear.classList.toggle('is-visible', Boolean(state.categorySearch));
       renderCategoryPills(catList);
     });
+
+    if (catClear) {
+      catClear.addEventListener('click', function () {
+        state.categorySearch = '';
+        catInput.value = '';
+        catClear.classList.remove('is-visible');
+        catInput.focus();
+        renderCategoryPills(catList);
+      });
+    }
+
     catCol.appendChild(catSearchBox);
 
     var catList = el('div', undefined, 'cat-pill-list');
