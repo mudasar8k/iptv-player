@@ -195,14 +195,7 @@ async function proxy(req,res,url,sess,hops=0){
           ? destination.hostname !== url.hostname : null
       });
 
-            const approved =
-        destination &&
-        destination.protocol === 'http:' &&
-        ['45.88.0.17', '45.148.147.103', '103.169.98.234', '94.26.105.4']
-          .includes(destination.hostname) &&
-        destination.port === '8080' &&
-        !destination.username &&
-        !destination.password;
+            const approved = destination && approvedSegmentHost(destination, sess.root);
 
       if (!approved) {
         return err(res,403,'Media destination not approved');

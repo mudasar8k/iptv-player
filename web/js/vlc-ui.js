@@ -1348,8 +1348,17 @@
         }
       }
 
-      if (isHls && !video.canPlayType('application/vnd.apple.mpegurl') && window.Hls && window.Hls.isSupported()) {
-        var hls = new window.Hls({ enableWorker: true, lowLatencyMode: true });
+      // Prefer Hls.js on all modern browsers (including webOS/Tizen) for reliable TS muxing & error recovery
+      var preferHlsJs = Boolean(window.Hls && window.Hls.isSupported());
+      if (isHls && preferHlsJs) {
+        var hls = new window.Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 90,
+          manifestLoadingTimeOut: 15000,
+          levelLoadingTimeOut: 15000,
+          fragLoadingTimeOut: 20000
+        });
         window._currentHls = hls;
         hls.loadSource(data.url);
         hls.attachMedia(video);
@@ -1362,7 +1371,23 @@
         });
         hls.on(window.Hls.Events.ERROR, function (_event, errData) {
           if (errData && errData.fatal) {
-            if (errEl) errEl.textContent = 'Stream error: ' + (errData.details || 'Unable to play stream');
+            switch (errData.type) {
+              case window.Hls.ErrorTypes.NETWORK_ERROR:
+                // Network glitch or dropped upstream live packet: auto-recover
+                if (errEl) errEl.textContent = 'Network hiccup, reconnecting…';
+                hls.startLoad();
+                break;
+              case window.Hls.ErrorTypes.MEDIA_ERROR:
+                // Codec/TS discontinuity: recover media buffer
+                if (errEl) errEl.textContent = 'Buffer recovering…';
+                hls.recoverMediaError();
+                break;
+              default:
+                hls.destroy();
+                window._currentHls = null;
+                if (errEl) errEl.textContent = 'Stream error: ' + (errData.details || 'Unable to play stream');
+                break;
+            }
           }
         });
       } else {
@@ -1386,9 +1411,42 @@
     }
   };
 
-  /* ── Video progress & error tracking ── */
+  /* ── Video progress & error tracking + Live Stall Watchdog ── */
   if (video) {
     var lastProgressTick = 0;
+    var lastPlaybackTime = 0;
+    var lastPlaybackWallTime = Date.now();
+    var stallRecoveryCount = 0;
+
+    // Live stream freeze watchdog: recovers stalled channels automatically
+    setInterval(function () {
+      if (!currentPlayback || video.paused || video.ended || video.seeking) return;
+      var curTime = video.currentTime;
+      var now = Date.now();
+      if (Math.abs(curTime - lastPlaybackTime) < 0.2) {
+        // Timeline hasn't moved in >4.5 seconds while unpaused
+        if (now - lastPlaybackWallTime > 4500) {
+          lastPlaybackWallTime = now;
+          if (currentPlayback.section === 'live') {
+            if (stallRecoveryCount < 3) {
+              stallRecoveryCount++;
+              if (window._currentHls) {
+                window._currentHls.recoverMediaError();
+              } else {
+                var prevSrc = video.src;
+                video.src = prevSrc;
+                video.play().catch(function () {});
+              }
+            }
+          }
+        }
+      } else {
+        lastPlaybackTime = curTime;
+        lastPlaybackWallTime = now;
+        stallRecoveryCount = 0;
+      }
+    }, 2000);
+
     video.addEventListener('timeupdate', function () {
       var now = Date.now();
       if (now - lastProgressTick > 5000) { // Throttle: every 5 seconds
@@ -1415,9 +1473,17 @@
     video.addEventListener('error', function () {
       if (window._currentHls) return; // Managed by HLS.js
       var errEl = document.getElementById('player-error');
-      if (!errEl) return;
       var mediaErr = video.error;
       var code = mediaErr ? mediaErr.code : 0;
+
+      // Smart automatic fallback: If audio codec (e.g. AC3/E-AC3) or decode fails on TV, automatically try AAC
+      if ((code === 3 || code === 4) && currentPlayback && currentPlayback.audioUrl && !currentPlayback.isCompat && audioBtn) {
+        if (errEl) errEl.textContent = 'Switching to AAC audio…';
+        audioBtn.click();
+        return;
+      }
+
+      if (!errEl) return;
       var msg = 'Playback error (' + code + '). ';
       if (code === 3) {
         msg = 'Video decode error. The TV decoder encountered an unsupported video track.';
